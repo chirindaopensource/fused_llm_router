@@ -1,0 +1,811 @@
+# ==============================================================================
+# config.yaml  --  YAML serialization of STUDY_CONFIG  (schemas REVISED)
+# Paper: "Beyond Benchmark Rankings: Information-Aware and Risk-Aware Optimization
+#        of Large Language Model Ensembles" (CS Chirinda, 2026). Concept/methodology;
+#        reports NO results. Example data values are ILLUSTRATIVE PLACEHOLDERS.
+#
+# Generated programmatically from the exact Python STUDY_CONFIG dict via yaml.dump
+# (round-trip verified equal to the source dict). Multi-line strings are literal
+# block scalars ('|'); prompt strings are VERBATIM Appendix C text.
+#
+# THIS REVISION: only raw_data_structures was changed. Each of the five raw schemas
+# (model_answer, candidate_solution, task_record, outcomes, qualification) now carries
+# container_type, grain, schema, field_dtypes ((logical; pandas) type + semantics +
+# invariants), invariants, structure_note, and example. ALL other parameters are
+# byte-identical to the prior config.
+#
+# TRUTHS (unchanged): (1) no neural network is trained; the only learner is the OPTIONAL
+# bandit router. (2) gateway.api_key is null here -- a secret is NEVER serialized; loaded
+# at runtime from gateway.api_key_env_var. (3) reproducibility.tensor_sha256,
+# fusion_sim_audit.per_stratum_tolerance, and estimation.reference_weight_w are null:
+# NOT fixed by the manuscript, not invented.
+# Generated: 2026-06-19
+# ==============================================================================
+
+metadata:
+  paper_title: 'Beyond Benchmark Rankings: Information-Aware and Risk-Aware Optimization of Large Language
+    Model Ensembles'
+  author: CS Chirinda
+  paper_date: '2026-06-18'
+  paper_type: concept_and_methodology
+  results_status: none_reported
+  config_purpose: single_run_of_reference_instantiation
+gateway:
+  base_url: https://openrouter.ai/api/v1
+  api_key_env_var: OPENROUTER_API_KEY
+  api_key: null
+  discover_models_at_runtime: true
+models:
+  panel:
+  - gemini-3-flash
+  - kimi-k2.6
+  - deepseek-v4-pro
+  judge: deepseek-v4-pro
+  frontier_baselines:
+  - gpt-5.5
+  - opus-4.8
+  - fable-5
+  id_resolution_keywords:
+    gemini-3-flash:
+    - gemini
+    - flash
+    kimi-k2.6:
+    - kimi
+    - k2
+    deepseek-v4-pro:
+    - deepseek
+    - v4
+    - pro
+llm_settings:
+  panel:
+    temperature: 0.2
+    max_tokens: 1200
+    response_format: null
+  solver:
+    temperature: 0.1
+    max_tokens: 2000
+    response_format: json_object
+  judge:
+    temperature: 0.0
+    max_tokens: 2000
+    response_format: json_object
+  request_timeout_s: 60
+  max_retries: 2
+  parallel_fanout: true
+prompts:
+  panel_system: |
+    You are an expert problem-solver participating in a multi-model panel. You will be
+    given a task. Produce your single best, self-contained answer.
+
+    Requirements:
+    - Reason carefully and show the key steps of your reasoning before the final answer.
+    - Do not assume other panelists' answers; solve the task independently.
+    - If the task is verifiable (code, math, structured output), make your final answer
+      precise and machine-checkable.
+    - Clearly delimit your final answer using the exact markers:
+      <final_answer> ... </final_answer>
+    - If you are uncertain, state the uncertainty explicitly inside the reasoning; do not
+      fabricate facts, citations, APIs, or results.
+
+    Task:
+    {task_prompt}
+  judge_system: |
+    You are a strict, impartial adjudicator. You will be given (1) a task, (2) a reference
+    solution or verifiable criterion, and (3) a candidate answer. Judge the candidate
+    answer ONLY against the task and the reference/criterion. Do not reward fluency,
+    confidence, or verbosity.
+
+    Decision procedure:
+    1. Determine whether the candidate answer is CORRECT (fully satisfies the task and
+       matches the reference / passes the criterion) or INCORRECT.
+    2. If INCORRECT, assign EXACTLY ONE primary error category from this closed set:
+       - "factual"            : a verifiably false assertion
+       - "reasoning"          : invalid inference from correct premises
+       - "arithmetic"         : numerical or symbolic miscalculation
+       - "instruction"        : failure to follow explicit constraints or output format
+       - "code"               : code that fails tests, raises, or does not compile
+       - "hallucination"      : invented citations, APIs, entities, or data
+       - "incompleteness"     : truncated or partial answer; dropped sub-questions
+       - "safety"             : unwarranted refusal or policy-inappropriate content
+    3. Provide a brief, specific justification grounded in the task and reference.
+    4. Report a calibrated confidence in [0,1].
+
+    Output requirements:
+    - Respond with a SINGLE JSON object and NOTHING else (no prose, no code fences).
+    - Conform exactly to this schema:
+      {
+        "is_correct": <boolean>,
+        "error_category": <one of the eight strings above, or null if is_correct is true>,
+        "confidence": <number between 0 and 1>,
+        "justification": <string, <= 60 words>
+      }
+
+    Task:
+    {task_prompt}
+
+    Reference / criterion:
+    {reference}
+
+    Candidate answer:
+    {candidate_answer}
+  solver_system: |
+    You are an expert solver that returns STRICTLY structured output. Solve the task and
+    return your result as a single JSON object conforming exactly to the provided schema.
+
+    Rules:
+    - Output ONLY the JSON object; no surrounding prose or code fences.
+    - Populate every required field; use null only where the schema permits it.
+    - Place any free-form reasoning in the "reasoning" field, not outside the JSON.
+    - For code tasks, the "code" field must contain a complete, runnable solution with no
+      placeholders.
+    - Do not invent values to satisfy the schema; if a value is genuinely unknown, follow
+      the schema's null/optional convention and explain in "reasoning".
+
+    Schema:
+    {json_schema}
+
+    Task:
+    {task_prompt}
+  judge_user_template: |
+    Original prompt:
+    {prompt}
+
+    Candidate answers:
+    {answers_json}
+  fusion_judge_system: |
+    You are a strict, impartial adjudicator selecting the single best answer from a panel.
+    You will be given (1) a task and (2) k candidate answers indexed from 0. Select the
+    ONE best answer strictly on correctness and faithfulness to the task; do not reward
+    fluency, confidence, or verbosity, and do not average or merge answers.
+
+    Output requirements:
+    - Respond with a SINGLE JSON object and NOTHING else (no prose, no code fences).
+    - Conform exactly to this schema:
+      {
+        "winner_index": <integer index of the chosen candidate>,
+        "justification": <string, <= 60 words>
+      }
+
+    Task:
+    {task_prompt}
+
+    Candidate answers (indexed):
+    {answers_json}
+  judge_output_schema:
+    is_correct: boolean
+    error_category: one of {factual,reasoning,arithmetic,instruction,code,hallucination,incompleteness,safety}
+      OR null if is_correct
+    confidence: number in [0,1]
+    justification: string, <= 60 words
+  solver_json_schema:
+    thesis: string (one-line conclusion)
+    reasoning: string (chain of reasoning)
+    python_code: string OR null (complete runnable code; null if not a code task)
+    confidence: number in [0,1] (self-reported)
+  fusion_judge_output_schema:
+    winner_index: int
+    justification: string, <= 60 words
+raw_data_structures:
+  model_answer:
+    container_type: list[dict] (accumulated; materialized as a pd.DataFrame)
+    grain: one record per generation (per (model, task, replicate) when replicates persisted)
+    schema:
+    - task_id
+    - model_id
+    - answer
+    - error
+    - prompt_tokens
+    - completion_tokens
+    - latency_s
+    - temperature
+    - seed
+    field_dtypes:
+      task_id: '(logical str; pandas object/category) FK to task_record.task_id; the join key binding
+        this generation to its task and ground truth. INVARIANT: must reference a held-out evaluation
+        task, never a qualification-benchmark id (§3.4).'
+      model_id: (logical str; pandas object/category) exact gateway identifier (resolved at runtime via
+        /models), preserved verbatim so any drift is attributable to a NAMED model version.
+      answer: (logical str; pandas object) the verbatim, UNNORMALIZED model output - the genuinely raw
+        payload the adjudicator later scores (App. C.2). No parsing/cleaning at this stage; strings may
+        be multi-KB.
+      error: (logical Optional[str]; pandas object with None) transport/decoding error message (timeout,
+        rate-limit, malformed stream), else None. INFRASTRUCTURE failure channel, kept distinct from a
+        content failure (a downstream annotation). Non-null => row has no scorable answer => retry (max_retries=2)
+        or record as failed; NEVER silently dropped.
+      prompt_tokens: (logical int; pandas int64, or nullable Int64 if a failed call leaves it unknown)
+        billed input tokens; combined with preprocessing.cost_per_token to derive cost_usd; feeds C(S)
+        (Eqs. 3, 36).
+      completion_tokens: (logical int; pandas int64/Int64) billed output tokens; identical cost-telemetry
+        role to prompt_tokens.
+      latency_s: (logical float; pandas float64) wall-clock seconds for THIS single call; feeds L(S) (Eqs.
+        3, 37). Recorded per call because it depends on transient network/provider load.
+      temperature: (logical float; pandas float64) the decoding temperature ACTUALLY used (provenance,
+        not a choice made here); panel role = 0.20 per llm_settings. Documents the generation distribution.
+      seed: (logical int; pandas int64) per-call decoding seed where the provider honors one (per-replicate
+        seeds = replicate_seed_base + rep). Best-effort generation reproducibility; many endpoints do
+        not guarantee seed determinism, part of why Tier-2 replicability is bounded (§13.3).
+    invariants:
+      task_id_held_out: task_id must reference a held-out evaluation task, never a qualification-benchmark
+        id (§3.4).
+      error_handling: error != None => no scorable answer; retry (max_retries=2) or record as failed;
+        never silently drop.
+      raw_text: answer is stored verbatim and unnormalized; no parsing/cleaning at this stage.
+    structure_note: Field list mirrors the §10.2 analytic projection 'schemas.model_answer'. In practice
+      these dicts accumulate into a list materialized as a DataFrame (one row per generation, or per (model,
+      task, replicate) when replicates are persisted); this is the input to Stage-2 scoring.
+    example:
+      task_id: math_0007
+      model_id: deepseek-v4-pro
+      answer: 'The limit equals e. Proof: ...'
+      error: null
+      prompt_tokens: 812
+      completion_tokens: 437
+      latency_s: 2.41
+      temperature: 0.2
+      seed: 20260618
+  candidate_solution:
+    container_type: list[dict] (accumulated; materialized as a pd.DataFrame)
+    grain: one record per (model, task) on the verifier-augmented path
+    schema:
+    - task_id
+    - model_id
+    - thesis
+    - reasoning
+    - python_code
+    - confidence
+    - error
+    field_dtypes:
+      task_id: (logical str; pandas object/category) FK to task_record; same held-out invariant as model_answer.
+      model_id: (logical str; pandas object/category) exact gateway id, as in model_answer.
+      thesis: (logical str; pandas object) the one-line conclusion / final-answer summary elicited by
+        the solver prompt - the concise claim the verifier/judge evaluates.
+      reasoning: (logical str; pandas object) the chain of reasoning, captured INSIDE the JSON (the solver
+        prompt mandates reasoning live in this field, not outside it), supporting auditability and adjudication.
+      python_code: (logical Optional[str]; pandas object with None) complete, runnable code for code-bearing
+        tasks, else None. Executed in architecture.sandbox (timeout_s=5, network='disabled', fs='restricted')
+        to ground correctness deterministically (§8.3); App. C.3 forbids placeholders, so a non-runnable
+        value is a protocol violation.
+      confidence: (logical float in [0,1]; pandas float64) self-reported calibrated confidence; the DETERMINISTIC
+        TIE-BREAKER in verifier-augmented fusion (highest deterministic score wins; ties broken by confidence,
+        §8.3). A replication should validate the [0,1] bound.
+      error: (logical Optional[str]; pandas object with None) transport/decoding/SCHEMA-VALIDATION error,
+        else None. Non-conforming JSON is rejected and re-requested under the strict-JSON discipline (App.
+        C.3); a persistent failure is recorded here.
+    invariants:
+      reasoning_inside_json: reasoning must live inside the JSON object, not as free text outside it (App.
+        C.3).
+      code_runnable: python_code must be complete and runnable (no placeholders); it is sandbox-executed
+        (§8.3).
+      confidence_bound: confidence in [0,1]; used only as the deterministic tie-breaker in fusion (§8.3).
+    structure_note: Field list mirrors the §10.2 analytic projection 'schemas.candidate_solution'. This
+      path carries NO token/latency/seed fields of its own; for both fusion paths the cost/latency telemetry
+      is ultimately consolidated into the outcomes tensor.
+    example:
+      task_id: code_0042
+      model_id: kimi-k2.6
+      thesis: Off-by-one in the loop bound.
+      reasoning: The range stops at n-1, so ...
+      python_code: 'def f(n): return sum(range(n+1))'
+      confidence: 0.78
+      error: null
+  task_record:
+    container_type: list[dict] (accumulated; materialized as a pd.DataFrame)
+    grain: one record per evaluation item
+    schema:
+    - task_id
+    - domain
+    - subdomain
+    - prompt
+    - ground_truth
+    - scoring_rule
+    - difficulty
+    - is_held_out
+    field_dtypes:
+      task_id: (logical str; pandas object/category) primary key of the task table; FK target for all
+        generation and tensor rows. Stable and globally unique (and, for the two non-canonical domains,
+        paired with a per-item content hash, §11.4).
+      domain: (logical str; pandas object/category) coarse capability partition; allowed set {math, code,
+        science, finance, long_context, planning, tool} (the §11.4 seven-domain suite). A partition key
+        for stratified item sampling and per-domain reporting.
+      subdomain: (logical str; pandas object/category) finer label (e.g., 'real_analysis') for stratified
+        reporting within a domain.
+      prompt: (logical str; pandas object) the exact task text presented IDENTICALLY to every panel model
+        - a common stimulus is what makes complementarity measurable rather than confounded. May be very
+        long for long-context tasks.
+      ground_truth: '(logical Any; pandas object) the reference signal Z: an exact-answer string, a unit-test
+        suite, a rubric key, or a numeric-tolerance target. HETEROGENEOUS type, interpreted according
+        to scoring_rule; the object against which correctness (A_it) is adjudicated.'
+      scoring_rule: (logical str; pandas object/category) selects the scoring path; allowed {exact_match,
+        unit_tests, judge_rubric, numeric_tol}. Determines whether grounding is deterministic (unit_tests/numeric_tol/exact_match)
+        or judge-based (judge_rubric), hence how strongly the label depends on the adjudicator (Limitation
+        5, §15.1).
+      difficulty: (logical str; pandas object/category) optional difficulty stratum (e.g., 'olympiad')
+        supporting difficulty-stratified item sampling for the variance-reduction design (§6/§11.4).
+      is_held_out: '(logical bool; pandas bool) MANDATORY INVARIANT: must be True. Enforces membership
+        in the evaluation partition disjoint from development and qualification (Assumption A1; held_out_disjoint_check).
+        A False here is a protocol violation that invalidates inference.'
+    invariants:
+      is_held_out_true: is_held_out must be True (eval disjoint from development/qualification; Assumption
+        A1).
+      common_stimulus: prompt is presented identically to every panel model.
+      ground_truth_typing: ground_truth type is heterogeneous and is interpreted per scoring_rule.
+      noncanonical_corpus_fixity: finance and long_context/agentic items must carry a content hash and
+        be released as a frozen item set, else they are demoted to exploratory (§11.4).
+    structure_note: 'Field list mirrors the §10.2 analytic projection ''schemas.task_record''. Corpus-fixity
+      (§11.4): for the finance and long-context/agentic domains, each record must additionally carry a
+      content hash and be released as a frozen item set, else those domains are demoted to exploratory
+      and excluded from H1-H5.'
+    example:
+      task_id: math_0007
+      domain: math
+      subdomain: real_analysis
+      prompt: Evaluate lim ...
+      ground_truth: e
+      scoring_rule: exact_match
+      difficulty: olympiad
+      is_held_out: true
+  outcomes:
+    container_type: pd.DataFrame
+    grain: one row per (model, task, replicate); R=5
+    schema:
+    - task_id
+    - model_id
+    - rep
+    - correct
+    - e_reason
+    - e_comp
+    - e_halluc
+    - e_ctx
+    - e_plan
+    - e_tool
+    - e_safety
+    - e_refusal
+    - cost_usd
+    - latency_s
+    - provider_version
+    - system_fingerprint
+    - seed
+    field_dtypes:
+      task_id: (logical str; pandas object/category) FK to task_record; NEVER a qualification-benchmark
+        id. Part of the composite primary key.
+      model_id: (logical str; pandas object/category) exact gateway id; part of the composite primary
+        key.
+      rep: (logical int; pandas int64, range small => int8/int16 suffices) replicate index 0..R-1 (R=5).
+        The axis that makes the generation-variance component sigma^2_gen (Eq. 20a) estimable and that
+        the inner loop of the nested cluster bootstrap resamples (§11.8). Third member of the composite
+        key (task_id, model_id, rep).
+      correct: (logical int in {0,1}; pandas int8/uint8 or bool) the correctness indicator A_it. The SOLE
+        input to the outcome-based information-gain estimator (Eqs. 9, 9a) and to the majority-vote simulated-fusion
+        quality Q_maj (Eq. 3a). NaN only if the underlying call errored (then handle the row explicitly).
+      e_reason: '(logical int in {0,1}; pandas int8/uint8) reasoning/logical-error flag (invalid inference
+        from correct premises); component of the error vector E_it (Eq. 2); populates the covariance Sigma
+        (Eq. 10). EXCLUSIVITY: an incorrect row has exactly one e_* = 1; a correct row has all e_* = 0.'
+      e_comp: (logical int in {0,1}; pandas int8/uint8) computational/arithmetic-error flag (numeric or
+        symbolic miscalculation). Same E_it/Sigma role, dtype, and exclusivity as e_reason.
+      e_halluc: (logical int in {0,1}; pandas int8/uint8) hallucination/fabrication flag (invented citations,
+        APIs, entities, data). Same role/dtype/exclusivity.
+      e_ctx: (logical int in {0,1}; pandas int8/uint8) long-context-failure flag. Same role/dtype/exclusivity.
+      e_plan: (logical int in {0,1}; pandas int8/uint8) planning-failure flag. Same role/dtype/exclusivity.
+      e_tool: (logical int in {0,1}; pandas int8/uint8) tool-use-failure flag. Same role/dtype/exclusivity.
+      e_safety: (logical int in {0,1}; pandas int8/uint8) safety/policy-error flag. Same role/dtype/exclusivity.
+      e_refusal: (logical int in {0,1}; pandas int8/uint8) refusal/incompleteness flag (truncated/partial/dropped
+        sub-questions). Same role/dtype/exclusivity. The eight e_* columns are the operational encoding
+        of the error taxonomy (see the taxonomy caveat in structure_note).
+      cost_usd: (logical float; pandas float64) per-call dollar cost = tokens x provider price; feeds
+        C(S). A derived telemetry quantity, recorded as a raw per-row fact in the tensor.
+      latency_s: (logical float; pandas float64) wall-clock latency for the call; feeds L(S).
+      provider_version: (logical str; pandas object/category) provider's served-version string (e.g.,
+        'deepseek-v4-pro@2026-06-01'), recorded on EVERY call so a version change is detectable, not silent
+        (drift control, §15.1; drift_monitor.capture_provider_version).
+      system_fingerprint: (logical str; pandas object/category) per-request fingerprint exposed by OpenAI-compatible
+        gateways (e.g., 'fp_8a1c...'); a finer drift/reproducibility signal than the version string (drift_monitor.capture_system_fingerprint).
+      seed: (logical int; pandas int64) per-call decoding seed where honored (varies by replicate, e.g.,
+        20260618 -> 20260619).
+    invariants:
+      primary_key:
+      - task_id
+      - model_id
+      - rep
+      error_exclusivity: correct==1 => all e_* == 0; correct==0 => exactly one e_* == 1.
+      canonicalization: sort by (task_id, model_id, rep); fixed column order; fixed float precision; SHA-256
+        over canonical bytes (reproducibility.tensor_sha256). Tier-1 validity <=> regenerating that hash.
+    structure_note: 'STRUCTURE-LEVEL SPECS. (1) Composite primary key (task_id, model_id, rep); one row
+      is the atomic unit over which all estimators operate. (2) SCHEMA RECONCILIATION: the §10.2 analytic
+      projection ''schemas.outcomes_columns'' lists 13 columns and OMITS rep plus the provenance triple
+      (provider_version, system_fingerprint, seed); this released tensor (§9.2(d)) augments the core with
+      those four. Treat §9.2(d) as the byte-level release schema and schemas.outcomes_columns as the estimator-facing
+      projection. (3) TAXONOMY CAVEAT: the failure taxonomy is labelled differently across §3.3 (Eq. 2
+      six base {math, code, fact, context, plan, tool}), the §3.3 eight-category refinement (base six
+      + {safety, refusal}), the §9.2 tensor columns {reason, comp, halluc, ctx, plan, tool, safety, refusal},
+      and the §11.5/App. C.2 rubric {factual, reasoning, arithmetic, instruction, code, hallucination,
+      incompleteness, safety}; these are NOT verbatim-identical, and the eight e_* tensor columns are
+      the BINDING machine-level contract that populates Sigma - fix one canonical category->column map
+      and apply it consistently across adjudication and covariance estimation. (4) DTYPE ENGINEERING:
+      store correct and the eight e_* as int8/uint8 (or bool); rep as int16; cost_usd/latency_s as float64;
+      ids/version/fingerprint as category; if errored calls introduce NaN, switch the integer columns
+      to nullable Int8/Int64 to preserve integer semantics.'
+    example:
+      columns:
+      - task_id
+      - model_id
+      - rep
+      - correct
+      - e_reason
+      - e_comp
+      - e_halluc
+      - e_ctx
+      - e_plan
+      - e_tool
+      - e_safety
+      - e_refusal
+      - cost_usd
+      - latency_s
+      - provider_version
+      - system_fingerprint
+      - seed
+      rows:
+      - - math_0007
+        - gemini-3-flash
+        - 0
+        - 0
+        - 1
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0.0021
+        - 1.18
+        - gemini-3-flash@2026-05-30
+        - fp_8a1c...
+        - 20260618
+      - - math_0007
+        - kimi-k2.6
+        - 0
+        - 1
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0.0039
+        - 2.05
+        - kimi-k2.6@2026-06-02
+        - fp_2bd9...
+        - 20260618
+      - - code_0042
+        - kimi-k2.6
+        - 0
+        - 0
+        - 0
+        - 1
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0.0041
+        - 2.11
+        - kimi-k2.6@2026-06-02
+        - fp_2bd9...
+        - 20260618
+  qualification:
+    container_type: pd.DataFrame
+    grain: one row per candidate model
+    schema:
+    - model_id
+    - family
+    - params_b
+    - mmlu
+    - gpqa
+    - humaneval
+    - swebench
+    - math
+    - arena_elo
+    - pct_rank
+    field_dtypes:
+      model_id: (logical str; pandas object/category) primary key; the JOIN KEY to outcomes.model_id.
+        Exact gateway id.
+      family: (logical str; pandas object/category) architecture/provider genealogy (Gemini, Kimi, DeepSeek,
+        Llama, Qwen). A STRATIFICATION AXIS (§11.3) - a proxy for shared pre-training data/tokenizer and
+        therefore for correlated errors (the failure geometry Theorem 2 penalizes).
+      params_b: '(logical Optional[float], billions; pandas float64 with NaN for closed-weight models)
+        CRITICAL DTYPE POINT: the mixed None+int values (e.g., [None, None, None, 70, 72]) realize as
+        float64; use nullable Int64 if integer semantics are wanted. A stratification axis, binned via
+        preprocessing.param_scale_bins (<20B / 20B-70B / >70B).'
+      mmlu: (logical float in [0,1]; pandas float64) public MMLU score (broad knowledge; Hendrycks et
+        al., 2021a). A component of pct_rank; pin the benchmark version/source and re-verify hosting at
+        use.
+      gpqa: (logical float in [0,1]; pandas float64) public GPQA score (graduate-level, search-resistant;
+        Rein et al., 2023). Component of pct_rank.
+      humaneval: (logical float in [0,1]; pandas float64) public HumanEval score (functional code correctness
+        under unit tests; Chen et al., 2021). Component of pct_rank.
+      swebench: (logical float in [0,1]; pandas float64) public SWE-bench score (repository-level patch
+        synthesis; Jimenez et al., 2024). Component of pct_rank.
+      math: (logical float in [0,1]; pandas float64) public MATH score (multi-step symbolic/numeric reasoning;
+        Hendrycks et al., 2021b). Component of pct_rank.
+      arena_elo: (logical int; pandas int64) human-preference Elo rating (Chatbot Arena / LMArena; Chiang
+        et al., 2024). A DIFFERENT SCALE from the [0,1] benchmark columns; record the platform version/date
+        since its roster and methodology evolve continuously.
+      pct_rank: (logical float in [0,1]; pandas float64) THE composite benchmark percentile and the qualification
+        DECISION VARIABLE. A model qualifies iff pct_rank >= P_min (default preprocessing.qualification_threshold_pct
+        = 0.80). The only column the gate reads directly; the per-benchmark columns inform how it is composed.
+    invariants:
+      primary_key: model_id; one row per candidate.
+      qualification_rule: qualify iff pct_rank >= preprocessing.qualification_threshold_pct (default 0.80).
+      disjointness: qualification ∩ evaluation = ∅; benchmark scores are an eligibility FILTER, never
+        the selection objective or the evaluation metric (§3.4).
+    structure_note: 'Governed by §9.2(e) and §§11.2-11.3 and intentionally NOT among the analytic ''schemas''
+      (it is an eligibility table, not an estimator input). CONTAMINATION CAVEAT (§13.2): these public
+      scores are valid for the gate only insofar as the items are absent from a candidate''s pre-training
+      data; item-level exclusion is governed by the contamination_audit parameters (a configuration block,
+      not this table).'
+    example:
+      columns:
+      - model_id
+      - family
+      - params_b
+      - mmlu
+      - gpqa
+      - humaneval
+      - swebench
+      - math
+      - arena_elo
+      - pct_rank
+      rows:
+      - - gemini-3-flash
+        - Gemini
+        - null
+        - 0.84
+        - 0.52
+        - 0.86
+        - 0.41
+        - 0.74
+        - 1287
+        - 0.81
+      - - deepseek-v4-pro
+        - DeepSeek
+        - null
+        - 0.88
+        - 0.58
+        - 0.89
+        - 0.52
+        - 0.83
+        - 1330
+        - 0.9
+      - - mid-qwen-72b
+        - Qwen
+        - 72
+        - 0.82
+        - 0.48
+        - 0.78
+        - 0.35
+        - 0.68
+        - 1245
+        - 0.73
+preprocessing:
+  qualification_threshold_pct: 0.8
+  stratify_by:
+  - family
+  - param_scale
+  - capability_cluster
+  param_scale_bins:
+    small: <20B
+    medium: 20B-70B
+    large: '>70B'
+  n_capability_clusters: 4
+  held_out_disjoint_check: true
+  cost_per_token:
+    input: from_provider
+    output: from_provider
+architecture:
+  trains_neural_network: false
+  constituent_model_type: pretrained_frozen_black_box_decoder_only_transformer
+  orchestration_subsystems:
+  - expert_models
+  - fusion_operator
+  - fmec_estimation_and_selection
+  - optional_learned_router
+  fusion_operator: verifier_augmented
+  weighted_fusion_exponents:
+    a: 0.5
+    b: 0.25
+  sandbox:
+    timeout_s: 5
+    network: disabled
+    fs: restricted
+  single_learnable_component: epsilon_greedy_contextual_bandit_router
+network_training:
+  gradient_training_used: false
+  gradient_hyperparameters: null
+  router:
+    enabled: false
+    policy: epsilon_greedy
+    epsilon: 0.1
+    reward_weights:
+      lambda: 0.5
+      mu: 0.02
+      gamma: 0.0
+    context_features:
+    - coding
+    - text
+    - quant
+    - general
+    online_update_rule: 'incremental_sample_mean: m <- m + (r - m)/n'
+    seed: 20260618
+estimation:
+  utility_weights:
+    alpha: 1.0
+    beta: 0.5
+    gamma: 0.3
+    delta: 0.2
+  fmec_hyperparams:
+    eta: 0.75
+    lambda: 0.6
+  monte_carlo:
+    K: 512
+    coalition_sampler: permutation
+    size_mixture_weights: null
+    sampling_seed: 20260618
+  information_gain:
+    estimator: outcome_based_cmi
+    discretization: correctness_indicator
+    conditioning: correct_count_sufficient_statistic
+    smoothing: laplace
+    smoothing_alpha: 0.5
+    miller_madow_correction: true
+  covariance:
+    estimator: ledoit_wolf
+    shrinkage_target: diagonal
+    block_by_error_category: true
+  reference_weight_w: null
+optimization:
+  C_max: 0.02
+  L_max: 4.0
+  R_max: 0.08
+  weight_simplex: true
+  selection: greedy_budget_feasible
+uncertainty:
+  replication:
+    R: 5
+    adjudication_subsample: 0.2
+    R_judge: 5
+    replicate_seed_base: 20260618
+  bootstrap:
+    B: 10000
+    interval: BCa
+    ci_level: 0.95
+    scheme: nested_cluster
+    resample_levels:
+    - task
+    - replicate
+    - adjudication
+    report_variance_components: true
+    bootstrap_seed: 13
+stat_tests:
+  primary_test: paired_t_or_wilcoxon
+  multiple_comparison: holm_bonferroni
+  alpha_level: 0.05
+  effect_sizes:
+  - cohens_d
+  - cliffs_delta
+  - relative_utility_gain
+  robustness_draws: 10000
+  robustness_prior: dirichlet_1_1_1_1
+  delta_U_rule: cost_tied
+  delta_U_floor: 0.02
+  delta_tau: 0.2
+  rsp_floor: 0.9
+  kappa_floor: 0.7
+  negligible_d: 0.2
+  negligible_cliffs_delta: 0.147
+fusion_sim_audit:
+  audit_n_coalitions: 200
+  stratified_across_coalition_size: true
+  report:
+  - slope
+  - r_squared
+  - residual_sd_sigma_u
+  per_stratum_tolerance: null
+contamination_audit:
+  ngram_overlap_n: 13
+  overlap_exclusion_rate: 0.1
+  canary_probe: true
+  report_per_benchmark_per_model: true
+  exclusion_rule: drop_item_if_any_model_contaminated
+drift_monitor:
+  capture_provider_version: true
+  capture_system_fingerprint: true
+  canary_task_set_size: 100
+  recheck_interval_days: 7
+  trigger_metric: correctness_rate_shift
+  trigger_threshold: 0.03
+  embedding_distance_check: true
+oracle_eval:
+  max_pool_size_for_enumeration: 20
+  report:
+  - regret
+  - relative_regret
+  - S_star
+plots:
+  efficient_frontier:
+    x: cost_usd
+    y: quality
+    annotate: ensemble_id
+  fmec_ci_forest:
+    sort_by: fmec
+    show_ci: true
+  covariance_heatmap:
+    cmap: viridis
+    annot: true
+  rsp_bar:
+    threshold_lines:
+    - 0.5
+    - 0.9
+  variance_components_bar:
+    components:
+    - task
+    - gen
+    - adj
+  dpi: 300
+  figure_format: pdf
+  font_scale: 1.1
+reproducibility:
+  global_seed: 20260618
+  log_model_versions: true
+  tier1_artifact: outcome_tensor
+  tensor_sha256: null
+  tier1_claim: bit_exact_from_tensor_and_seeds
+  tier2_claim: instrumented_and_bounded_via_variance_components
+  persist:
+  - prompts
+  - seeds
+  - outcome_tensor
+  - tensor_sha256
+  - coalition_samples
+  - covariance
+  - fmec_estimates
+  - bootstrap_outputs
+  - variance_components
+  - selected_ensemble
+  - model_version_manifest
+  - contamination_report
+  seed_ledger:
+    global_seed: 20260618
+    monte_carlo_sampling_seed: 20260618
+    replicate_seed_base: 20260618
+    bootstrap_seed: 13
+    router_seed: 20260618
+methodological_notes:
+  no_results_reported: Concept/methodology paper; all example values are illustrative placeholders, never
+    measured (§1.4, §12.1).
+  no_neural_training: No neural network is trained (§8.1); constituent LLMs are frozen black-box services;
+    the only learnable component is the optional bandit router (network_training).
+  outcome_tensor_status: The outcomes tensor is the scored output of Stages 1-2 AND the canonical RAW
+    INPUT to the estimation pipeline (Stages 3-6); it is the primary released artifact (§9.2, §13.3).
+  schema_reconciliation: §10.2 schemas.outcomes_columns lists 13 analytic columns; the released tensor
+    (§9.2(d)) adds rep + (provider_version, system_fingerprint, seed).
+  error_taxonomy_mapping: Taxonomy labels differ across §3.3 (Eq.2 six base), the §3.3 eight-category
+    refinement, the §9.2 e_* columns, and the §11.5/App. C.2 rubric; the eight e_* tensor columns are
+    the BINDING contract feeding Sigma.
+  prompt_brace_fidelity: 'Prompts are VERBATIM Appendix C (single literal braces in JSON schemas). Fill-tokens:
+    {task_prompt}, {reference}, {candidate_answer}, {prompt}, {answers_json}, {json_schema}. Do NOT naively
+    str.format(); use safe named substitution.'
+  implied_fusion_prompt: prompts.fusion_judge_system is RECONSTRUCTED from §8.3 + App. C.2 (return object
+    verbatim); it is NOT printed verbatim in the manuscript.
+  undefined_reference_weight_w: 'estimation.reference_weight_w is None: the paper fixes no numeric default
+    for the MRC weight vector (Eq. 12).'
+  fusion_sim_tolerance_unspecified: 'fusion_sim_audit.per_stratum_tolerance is None: pre-registered in
+    principle but no numeric value given (§4.2.1).'
+  tensor_hash_to_be_populated: reproducibility.tensor_sha256 is None until the reference instantiation
+    is executed (§13.3).
+  two_tier_reproducibility: Tier-1 (downstream of the tensor) is bit-exact and deterministic; Tier-2 (re-collection)
+    is bounded and instrumented, not exact (§13.3).
+  credential_security: No API secret is ever hardcoded or persisted; only the env-var NAME is stored;
+    the key is read at runtime (§10).
