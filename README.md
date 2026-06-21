@@ -79,7 +79,7 @@ The FMEC scores are aggregated into a deployment utility function. The pipeline 
 Below is a diagram which summarizes the proposed approach:
 
 <div align="center">
-  <img src="https://github.com/chirindaopensource/fused_llm_router/blob/main/fused_llm_router_draft_ipo_main_9.png" alt="Pipeline Architecture" width="100%">
+  <img src="https://github.com/chirindaopensource/fused_llm_router/blob/main/fused_llm_router_ipo_main_9.png" alt="Pipeline Architecture" width="100%">
 </div>
 
 ## Features
