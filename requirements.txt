@@ -1,0 +1,148 @@
+# ==============================================================================#
+# 
+# Beyond Benchmark Rankings: Information-Aware and Risk-Aware Optimization
+# of Large Language Model Ensembles
+# 
+# Dependency Manifest
+# 
+# This requirements.txt pins the complete dependency surface for a production-grade
+# implementation of the FMEC (Fusion-based Model Ensemble Composition) framework.
+# 
+# The framework performs:
+# • Multidimensional error taxonomy with covariance-aware risk estimation
+# • Permutation-based Monte Carlo Shapley estimation for marginal utility
+# • Outcome-based conditional mutual information (CMI) for informational novelty
+# • Budget-feasible greedy submodular optimization for ensemble selection
+# • Three-level nested cluster bootstrap for hierarchical variance decomposition
+# • Pre-registered econometric hypothesis testing with Holm-Bonferroni FWER control
+# 
+# Author: CS Chirinda
+# License: MIT
+# Version: 1.0.0
+# 
+# ==============================================================================#
+
+# --------- Python Version & Environment --------- 
+
+# This implementation targets Python 3.9–3.12 (inclusive).
+# Pin your interpreter: python==3.9.* or python==3.10.* or python==3.11.* or python==3.12.*
+# Rationale: 
+#  • Python 3.9+: concurrent.futures stability, PEP 604 union type hints, importlib.metadata
+#  • Python <3.13: LTS support for production; 3.13 is cutting-edge and not yet battle-tested
+#            in distributed environments with ProcessPoolExecutor + pickle.
+
+# --------- Core Scientific Computing Stack --------- 
+
+# NumPy 1.24+: Dense tensor operations, random number generation (numpy.random.Generator),
+# linear algebra (eigendecomposition, Cholesky), and stable pickle serialization of 
+# Generator objects for reproducible Dirichlet sweeps across process boundaries.
+numpy>=1.24.0,<2.0.0
+
+# Pandas 2.0+: High-performance DataFrames, groupby hierarchies, multi-index operations,
+# and robust handling of heterogeneous task-by-model results tables. Used for outcome
+# tensor assembly, stratified bootstrap resampling, and variance-component reporting.
+pandas>=2.0.0,<3.0.0
+
+# SciPy 1.13+: Stable implementation of:
+#  • scipy.stats.bootstrap with method='bca' for BCa confidence intervals
+#  • scipy.stats.permutation_test for Spearman IG–MEC coupling validation (H2)
+#  • scipy.stats.norm for z-score transformation in risk budgeting
+#  • scipy.linalg for spectral decomposition and condition-number diagnosis
+#  • scipy.optimize for Ledoit-Wolf shrinkage targeting and linear-program solvers
+#    (future: knapsack/submodular-constrained selection via scipy.optimize)
+scipy>=1.13.0,<2.0.0
+
+# Scikit-learn 1.4+: Machine-learning utilities for preprocessing, reliability metrics, and 
+# statistical testing:
+#  • sklearn.preprocessing.StandardScaler for outcome normalization
+#  • sklearn.impute.SimpleImputer for handling sparse adjudication results
+#  • sklearn.cluster.KMeans for adjudication coherence diagnostics
+#  • sklearn.metrics.cohen_kappa_score for inter-rater reliability on human audits
+#  • sklearn.covariance.LedoitWolf (future: shrinkage targeting)
+scikit-learn>=1.4.0,<2.0.0
+
+# --------- Visualization & Publication --------- 
+
+# Matplotlib 3.8+: Publication-grade 2D plotting, constrained_layout for multi-panel figures,
+# and precise control over font rendering for efficient-frontier, heatmap, and CI-forest exports.
+matplotlib>=3.8.0,<4.0.0
+
+# Seaborn 0.13+: High-level statistical visualization built on Matplotlib.
+#  • seaborn.heatmap for covariance matrices and error-by-task-by-model tensors
+#  • seaborn.FacetGrid for stratified comparisons (e.g., risk vs. utility by error category)
+#  • seaborn.boxplot and seaborn.violinplot for variance-component distributions
+#  Requires Matplotlib ≥3.8 for consistent styling.
+seaborn>=0.13.0,<0.14.0
+
+# --------- Optional: Testing & Development --------- 
+
+# Uncomment the section below if you are developing or running the test harnesses
+# (test_logic.py, test_logic2.py, test_logic3.py, test_eds.py, test_env.py, test_pickle.py).
+
+# pytest>=7.4.0        # Test discovery and execution
+# pytest-cov>=4.1.0    # Code coverage reporting
+# hypothesis>=6.92.0   # Property-based testing for robustness validation
+
+# --------- Optional: Static Analysis & Linting --------- 
+
+# Uncomment the section below for pre-commit and CI/CD validation.
+
+# black>=23.12.0       # Code formatting (PEP 8 + minimal line length 88)
+# flake8>=6.1.0        # Style guide enforcement
+# isort>=5.13.0        # Import sorting (isort --profile black)
+# mypy>=1.7.0          # Static type checking (strict mode recommended)
+# pylint>=3.0.0        # Advanced linting (detects unused imports, complexity)
+
+# --------- Optional: Dependency Management & Security --------- 
+
+# Uncomment the section below to audit dependency vulnerabilities at install time.
+
+# pip-audit>=2.6.0     # Security scanning for pip packages
+# safety>=3.0.0        # Checks dependencies against known security advisories
+
+# --------- Installation Instructions --------- 
+
+# Standard installation:
+#   pip install -r requirements.txt
+# 
+# With test harnesses:
+#   pip install -r requirements.txt pytest pytest-cov hypothesis
+# 
+# With development tools (linting, type checking, formatting):
+#   pip install -r requirements.txt black flake8 isort mypy pylint
+# 
+# With security auditing:
+#   pip install -r requirements.txt pip-audit safety
+# 
+# Isolated virtual environment (recommended):
+#   python3.11 -m venv venv/
+#   source venv/bin/activate  # On Windows: venv\Scripts\activate
+#   pip install --upgrade pip
+#   pip install -r requirements.txt
+
+# ==============================================================================#
+# 
+# Version History & Justification:
+# 
+# • NumPy 1.24+ introduced improved pickle serialization for numpy.random.Generator
+#   objects, critical for deterministic parallel dispatch via ProcessPoolExecutor.
+# 
+# • Pandas 2.0+ unified the API, deprecated FutureWarning-prone operations, and
+#   stabilized multi-index groupby for hierarchical bootstrap resampling.
+# 
+# • SciPy 1.13+ finalized the BCa bootstrap API (method='bca' parameter) and
+#   permutation_test, which are essential for econometric hypothesis testing (H1–H5).
+# 
+# • Scikit-learn 1.4+ includes stable Cohen's κ implementation and modern
+#   preprocessing pipelines for outcome normalization and missing-data imputation.
+# 
+# • Matplotlib 3.8+ and Seaborn 0.13+ ensure publication-grade rendering of
+#   efficient frontiers, covariance heatmaps, and confidence-interval forests
+#   without deprecation warnings.
+# 
+# Upper bounds (e.g., <2.0.0 for numpy) are set conservatively to avoid breaking
+# changes in major versions, which historically introduce deprecations and API
+# restructuring. When upgrading, verify against the published changelog and run
+# the full test suite (test_logic.py–test_pickle.py).
+
+# ==============================================================================#
