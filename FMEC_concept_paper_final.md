@@ -101,23 +101,23 @@ The framework sits at the intersection of ensemble learning, cooperative game th
 
 Let
 $$
-N = {M\_1, M\_2, \\ldots, M\_n}
+N = {M_1, M_2, \ldots, M_n}
 $$
-denote a finite candidate pool of language models that satisfy a minimum eligibility criterion (Section 3.4). Let $S \\subseteq N$ denote an *ensemble*. The ensemble may be realized through majority voting, weighted voting, judge-based synthesis, routing, or a hybrid mechanism. **The framework is agnostic to the exact fusion operator**, provided that ensemble utility can be measured consistently on held-out tasks (Section 8.3).
+denote a finite candidate pool of language models that satisfy a minimum eligibility criterion (Section 3.4). Let $S \subseteq N$ denote an *ensemble*. The ensemble may be realized through majority voting, weighted voting, judge-based synthesis, routing, or a hybrid mechanism. **The framework is agnostic to the exact fusion operator**, provided that ensemble utility can be measured consistently on held-out tasks (Section 8.3).
 
 ### 3.2 Model representation
 
 Each model is represented by an attribute tuple
 $$
-M\_i = (\\mu\_i,, c\_i,, l\_i,, r\_i,, E\_i), \\tag{1}
+M_i = (\mu_i\, c_i\, l_i\, r_i\, E_i), \tag{1}
 $$
-where $\\mu\_i$ is expected capability, $c\_i$ is inference cost, $l\_i$ is latency, $r\_i$ is robustness (e.g., historical non-error rate), and $E\_i$ is a multidimensional error representation. This representation enables simultaneous consideration of capability, efficiency, reliability, and failure behavior.
+where $\mu_i$ is expected capability, $c_i$ is inference cost, $l_i$ is latency, $r_i$ is robustness (e.g., historical non-error rate), and $E_i$ is a multidimensional error representation. This representation enables simultaneous consideration of capability, efficiency, reliability, and failure behavior.
 
 ### 3.3 Multidimensional error taxonomy
 
-A central weakness of prior methodologies is the treatment of error as a *scalar*. We instead define a multidimensional error vector. For model $M\_i$,
+A central weakness of prior methodologies is the treatment of error as a *scalar*. We instead define a multidimensional error vector. For model $M_i$,
 $$
-E\_i = (E\_{\\mathrm{math}},, E\_{\\mathrm{code}},, E\_{\\mathrm{fact}},, E\_{\\mathrm{context}},, E\_{\\mathrm{plan}},, E\_{\\mathrm{tool}}) \\in \\mathbb{R}^m, \\tag{2}
+E_i = (E_{\mathrm{math}}\, E_{\mathrm{code}}\, E_{\mathrm{fact}}\, E_{\mathrm{context}}\, E_{\mathrm{plan}}\, E_{\mathrm{tool}}) \in \mathbb{R}^m, \tag{2}
 $$
 with coordinates denoting mathematical-reasoning errors, coding errors, factual hallucinations, long-context failures, planning failures, and tool-use failures, respectively. The implemented taxonomy is extensible; the experimental protocol (Section 11.5) uses an eight-category refinement that additionally separates *safety failures* and *refusal failures*. The taxonomy allows covariance structures to be estimated **separately across failure categories**, which is necessary because models exhibit different interaction patterns across domains.
 
@@ -143,99 +143,99 @@ FMEC is introduced as an *operational* measure of conditional ensemble value. It
 
 The framework begins with a utility function $v(S)$ mapping an ensemble to a real-valued score. Unlike benchmark scores, utility explicitly incorporates deployment objectives:
 $$
-v(S) = \\alpha, Q(S) - \\beta, R(S) - \\gamma, C(S) - \\delta, L(S), \\tag{3}
+v(S) = \alpha\, Q(S) - \beta\, R(S) - \gamma\, C(S) - \delta\, L(S), \tag{3}
 $$
-where $Q(S)$ is expected task performance, $R(S)$ is correlated-failure risk, $C(S)$ is inference cost, $L(S)$ is latency, and $\\alpha,\\beta,\\gamma,\\delta > 0$ are application-dependent preference weights. The formulation is intentionally modular and permits deployment-specific optimization: safety-critical environments emphasize risk reduction (large $\\beta$); consumer applications emphasize latency (large $\\delta$); research systems emphasize performance (large $\\alpha$). The framework thus **separates utility specification from optimization**.
+where $Q(S)$ is expected task performance, $R(S)$ is correlated-failure risk, $C(S)$ is inference cost, $L(S)$ is latency, and $\alpha\,\beta\,\gamma\,\delta > 0$ are application-dependent preference weights. The formulation is intentionally modular and permits deployment-specific optimization: safety-critical environments emphasize risk reduction (large $\beta$); consumer applications emphasize latency (large $\delta$); research systems emphasize performance (large $\alpha$). The framework thus **separates utility specification from optimization**.
 
 #### 4.2.1 A closed form for $Q(S)$ and a validated fusion-simulation gap
 
-The quality term $Q(S)$ must be evaluable for *arbitrary* coalitions $S$, because the coalition-sampling estimator of Section 4.4 evaluates $v(\\cdot)$ on thousands of subsets. Yet the primitive measurement collected in Stage 2 is *per-model* correctness $A\_{it}\\in{0,1}$, not coalition-level quality. The map from per-model correctness to coalition quality is therefore part of the definition of the objective and must be fixed, not left implicit. We make it explicit and distinguish two routes.
+The quality term $Q(S)$ must be evaluable for *arbitrary* coalitions $S$, because the coalition-sampling estimator of Section 4.4 evaluates $v(\cdot)$ on thousands of subsets. Yet the primitive measurement collected in Stage 2 is *per-model* correctness $A_{it}\in{0,1}$, not coalition-level quality. The map from per-model correctness to coalition quality is therefore part of the definition of the objective and must be fixed, not left implicit. We make it explicit and distinguish two routes.
 
 **(i) Simulated-fusion quality (the computed default).** For a deterministic fusion rule that depends only on members' correctness indicators, $Q(S)$ is a closed-form function of the released outcome tensor. For unweighted majority vote over an odd coalition,
 $$
-\\widehat{Q}*{\\mathrm{maj}}(S) ;=; \\frac{1}{|T|}\\sum*{t\\in T}\\mathbb{1}!\\left\[\\sum\_{i\\in S} A\_{it} ;>; \\tfrac{|S|}{2}\\right], \\tag{3a}
+\widehat{Q}_{\mathrm{maj}}(S) \;=\; \frac{1}{|T|}\sum_{t\in T}\mathbb{1}\!\left[\sum_{i\in S} A_{it} \;>\; \tfrac{|S|}{2}\right], \tag{3a}
 $$
-with ties (even $|S|$) broken by the highest-reliability member $r\_i$ (Eq. 1); for the verifier-augmented operator (Section 8.3) the indicator is replaced by the deterministic verifier's pass/fail, which is likewise a function of stored outputs. Equation (3a) is exactly reproducible from the tensor and seeds and injects **no** LLM non-determinism into the objective, which is what permits the entire estimation chain to be Tier-1 reproducible (Section 13.3).
+with ties (even $|S|$) broken by the highest-reliability member $r_i$ (Eq. 1); for the verifier-augmented operator (Section 8.3) the indicator is replaced by the deterministic verifier's pass/fail, which is likewise a function of stored outputs. Equation (3a) is exactly reproducible from the tensor and seeds and injects **no** LLM non-determinism into the objective, which is what permits the entire estimation chain to be Tier-1 reproducible (Section 13.3).
 
-**(ii) Realized-fusion quality (the ground truth).** The deployed system does not vote on correctness flags; it runs the fusion operator $f$ — often a judge LLM — on the members' *outputs* and scores the synthesized answer. Realized quality $Q\_f(S)$ is the honest target, but evaluating it for every sampled coalition reintroduces both combinatorial cost ($K$ coalitions $\\times$ judge calls) and judge non-determinism into $v(\\cdot)$.
+**(ii) Realized-fusion quality (the ground truth).** The deployed system does not vote on correctness flags; it runs the fusion operator $f$ — often a judge LLM — on the members' *outputs* and scores the synthesized answer. Realized quality $Q_f(S)$ is the honest target, but evaluating it for every sampled coalition reintroduces both combinatorial cost ($K$ coalitions $\times$ judge calls) and judge non-determinism into $v(\cdot)$.
 
-**The simulation gap, measured not assumed.** We compute $\\widehat{Q}\_{\\mathrm{maj}}$ (or the verifier variant) for all coalitions and *validate* it against $Q\_f$ on a random audit sample of coalitions (the reference instantiation uses $200$ coalitions stratified across $|S|$). We regress realized on simulated quality, $Q\_f(S)=\\beta\_0+\\beta\_1\\widehat{Q}(S)+u(S)$, and report the slope, $R^2$, and the residual standard deviation $\\widehat{\\sigma}\_u$ as a **bounded fusion-simulation error**; the protocol treats $\\widehat{\\sigma}\_u$ as a component of total uncertainty (Section 11.8) and flags any coalition-size stratum where $|Q\_f-\\widehat{Q}|$ exceeds a pre-registered tolerance. This keeps $v(\\cdot)$ deterministic and cheap while making explicit — and quantitatively bounding — the fidelity cost of the simulation. (The realized-fusion path remains the served object of Section 8.3; (3a) is the *evaluation-time* surrogate.)
+**The simulation gap, measured not assumed.** We compute $\widehat{Q}_{\mathrm{maj}}$ (or the verifier variant) for all coalitions and *validate* it against $Q_f$ on a random audit sample of coalitions (the reference instantiation uses $200$ coalitions stratified across $|S|$). We regress realized on simulated quality, $Q_f(S)=\beta_0+\beta_1\widehat{Q}(S)+u(S)$, and report the slope, $R^2$, and the residual standard deviation $\widehat{\sigma}_u$ as a **bounded fusion-simulation error**; the protocol treats $\widehat{\sigma}_u$ as a component of total uncertainty (Section 11.8) and flags any coalition-size stratum where $|Q_f-\widehat{Q}|$ exceeds a pre-registered tolerance. This keeps $v(\cdot)$ deterministic and cheap while making explicit — and quantitatively bounding — the fidelity cost of the simulation. (The realized-fusion path remains the served object of Section 8.3; (3a) is the *evaluation-time* surrogate.)
 
 ### 4.3 Marginal Ensemble Contribution (MEC)
 
-Given an ensemble $S$ and a candidate $M\_j \\notin S$, the instantaneous marginal contribution is
+Given an ensemble $S$ and a candidate $M_j \notin S$, the instantaneous marginal contribution is
 $$
-\\mathrm{MEC}(M\_j \\mid S) = v(S \\cup {M\_j}) - v(S). \\tag{4}
+\mathrm{MEC}(M_j \mid S) = v(S \cup {M_j}) - v(S). \tag{4}
 $$
-This is the immediate utility gained by adding $M\_j$ to $S$, analogous to marginal utility in economics and marginal contribution in cooperative game theory. Instantaneous MEC is necessary but insufficient: a model's contribution depends heavily on the coalition to which it is added, so a single coalition cannot provide a stable estimate.
+This is the immediate utility gained by adding $M_j$ to $S$, analogous to marginal utility in economics and marginal contribution in cooperative game theory. Instantaneous MEC is necessary but insufficient: a model's contribution depends heavily on the coalition to which it is added, so a single coalition cannot provide a stable estimate.
 
 ### 4.4 Expected MEC and its Monte Carlo estimator
 
-Let $\\mathcal{S}\_j$ denote a distribution over ensembles excluding $M\_j$. The expected contribution is
+Let $\mathcal{S}_j$ denote a distribution over ensembles excluding $M_j$. The expected contribution is
 $$
-\\overline{\\mathrm{MEC}}*j = \\mathbb{E}*{S \\sim \\mathcal{S}\_j}!\\left\[,v(S \\cup {M\_j}) - v(S),\\right]. \\tag{5}
+\overline{\mathrm{MEC}}_j = \mathbb{E}_{S \sim \mathcal{S}_j}\!\left[\,v(S \cup {M_j}) - v(S)\,\right]. \tag{5}
 $$
-Because the exact expectation is computationally intractable for large pools, it is estimated by Monte Carlo sampling. Given $K$ sampled coalitions $S\_1, \\ldots, S\_K$ (each excluding $M\_j$), the estimator is
+Because the exact expectation is computationally intractable for large pools, it is estimated by Monte Carlo sampling. Given $K$ sampled coalitions $S_1, \ldots, S_K$ (each excluding $M_j$), the estimator is
 $$
-\\widehat{\\mathrm{MEC}}*j = \\frac{1}{K}\\sum*{k=1}^{K}\\Big\[,v(S\_k \\cup {M\_j}) - v(S\_k),\\Big]. \\tag{6}
+\widehat{\mathrm{MEC}}_j = \frac{1}{K}\sum_{k=1}^{K}\Big[\,v(S_k \cup {M_j}) - v(S_k)\,\Big]. \tag{6}
 $$
-This represents the average incremental utility attributable to $M\_j$ across many ensemble contexts. Its statistical properties (consistency, variance, sample complexity) are established in Section 6.
+This represents the average incremental utility attributable to $M_j$ across many ensemble contexts. Its statistical properties (consistency, variance, sample complexity) are established in Section 6.
 
 ### 4.5 Relationship to Shapley values
 
-The Shapley value of $M\_j$ is
+The Shapley value of $M_j$ is
 $$
-\\phi\_j = \\sum\_{S \\subseteq N \\setminus {M\_j}} \\frac{|S|!,(n-|S|-1)!}{n!},\\Big\[,v(S \\cup {M\_j}) - v(S),\\Big]. \\tag{7}
+\phi_j = \sum_{S \subseteq N \setminus {M_j}} \frac{|S|!\,(n-|S|-1)!}{n!}\,\Big[\,v(S \cup {M_j}) - v(S)\,\Big]. \tag{7}
 $$
-Equation (6) is *Shapley-inspired* in that it averages marginal contribution over coalitions, but the objectives differ fundamentally. Shapley estimation answers *who deserves credit?* (attribution); FMEC answers *which model should be deployed?* (optimization). Because deployment utility includes cost, latency, and risk — considerations outside the classical Shapley formulation — Shapley estimation functions as a *component* of FMEC, not its replacement. The use of approximate Shapley values over an ensemble "game" to rank and select constituent models follows Rozemberczki and Sarkar (2021); the departure here is the deployment-oriented value function together with the information- and risk-aware terms introduced below. (Equation (6) corresponds to a particular coalition-sampling distribution $\\mathcal{S}\_j$; the uniform-over-permutations choice recovers an unbiased Shapley estimator, while task- or budget-conditioned choices target the deployment regime of interest.)
+Equation (6) is *Shapley-inspired* in that it averages marginal contribution over coalitions, but the objectives differ fundamentally. Shapley estimation answers *who deserves credit?* (attribution); FMEC answers *which model should be deployed?* (optimization). Because deployment utility includes cost, latency, and risk — considerations outside the classical Shapley formulation — Shapley estimation functions as a *component* of FMEC, not its replacement. The use of approximate Shapley values over an ensemble "game" to rank and select constituent models follows Rozemberczki and Sarkar (2021); the departure here is the deployment-oriented value function together with the information- and risk-aware terms introduced below. (Equation (6) corresponds to a particular coalition-sampling distribution $\mathcal{S}_j$; the uniform-over-permutations choice recovers an unbiased Shapley estimator, while task- or budget-conditioned choices target the deployment regime of interest.)
 
-**Exact specification of the sampler and the estimand it targets.** The phrase "sample a coalition $S\_k\\subseteq N\\setminus{M\_j}$" is ambiguous between (a) drawing a coalition *size* uniformly on ${1,\\dots,n-1}$ then a subset of that size uniformly, and (b) drawing a subset uniformly over all $2^{,n-1}$ subsets; these are different distributions and yield different $\\widehat{\\mathrm{MEC}}*j$, and — as noted above — the choice fixes which estimand is being estimated. We remove the ambiguity by fixing the **permutation sampler** (Castro, Gómez and Tejada, 2009) as the default, which is the unbiased Shapley estimand and is the configuration named in `monte\\\_carlo.coalition\\\_sampler = "permutation"` (Section 10.1):
+**Exact specification of the sampler and the estimand it targets.** The phrase "sample a coalition $S_k\subseteq N\setminus{M_j}$" is ambiguous between (a) drawing a coalition *size* uniformly on ${1,\dots,n-1}$ then a subset of that size uniformly, and (b) drawing a subset uniformly over all $2^{n-1}$ subsets; these are different distributions and yield different $\widehat{\mathrm{MEC}}_j$, and — as noted above — the choice fixes which estimand is being estimated. We remove the ambiguity by fixing the **permutation sampler** (Castro, Gómez and Tejada, 2009) as the default, which is the unbiased Shapley estimand and is the configuration named in `monte\\\_carlo.coalition\\\_sampler = "permutation"` (Section 10.1):
 $$
-\\widehat{\\phi}j ;=; \\frac{1}{K}\\sum{k=1}^{K}\\Big\[,v\\big(P^{(k)}*{\\prec j}\\cup{M\_j}\\big) - v\\big(P^{(k)}\_{\\prec j}\\big)\\Big],\\qquad P^{(k)}\\sim\\mathrm{Unif}(\\mathfrak{S}*n), \\tag{6a}
+\widehat{\phi}_j \;=\; \frac{1}{K}\sum_{k=1}^{K}\Big[\,v\big(P^{(k)}_{\prec j}\cup{M_j}\big) - v\big(P^{(k)}_{\prec j}\big)\Big]\,\qquad P^{(k)}\sim\mathrm{Unif}(\mathfrak{S}_n), \tag{6a}
 $$
-where $P^{(k)}$ is a uniformly random permutation of the $n$ candidates and $P^{(k)}*{\\prec j}$ is the set of candidates preceding $M\_j$ in that permutation. Equation (6a) is an unbiased estimator of the Shapley value (Eq. 7) and is the recommended default precisely because its estimand is unambiguous and order-symmetric. When the deployment-conditioned estimand is wanted instead, the sampler is replaced by an explicit, documented mixing distribution over coalition sizes (`monte\\\_carlo.coalition\\\_sampler = "size\\\_mixture"` with the size-weight vector recorded in the config), and the paper reports *which* estimand a given table targets. The reference instantiation (Section 12.1) uses the permutation sampler so that the released $\\widehat{\\mathrm{MEC}}$ column is reproducible without knowledge of an undocumented size distribution.
+where $P^{(k)}$ is a uniformly random permutation of the $n$ candidates and $P^{(k)}_{\prec j}$ is the set of candidates preceding $M_j$ in that permutation. Equation (6a) is an unbiased estimator of the Shapley value (Eq. 7) and is the recommended default precisely because its estimand is unambiguous and order-symmetric. When the deployment-conditioned estimand is wanted instead, the sampler is replaced by an explicit, documented mixing distribution over coalition sizes (`monte\\\_carlo.coalition\\\_sampler = "size\\\_mixture"` with the size-weight vector recorded in the config), and the paper reports *which* estimand a given table targets. The reference instantiation (Section 12.1) uses the permutation sampler so that the released $\widehat{\mathrm{MEC}}$ column is reproducible without knowledge of an undocumented size distribution.
 
 ### 4.6 Conditional information gain
 
 **Why correlation is insufficient.** Suppose model $A$ achieves $95%$ accuracy and model $B$ achieves $60%$, with uncorrelated errors. A correlation-based criterion may reward $B$ as "diverse," yet $B$ contributes little *useful* information. Diversity alone does not imply value; *informative* diversity does. We therefore introduce conditional information gain.
 
-Let $Y\_j$ be the output of $M\_j$, let $Y\_S$ be the outputs already available from ensemble $S$, and let $Z$ be the ground-truth outcome. The conditional information gain of $M\_j$ given $S$ is
+Let $Y_j$ be the output of $M_j$, let $Y_S$ be the outputs already available from ensemble $S$, and let $Z$ be the ground-truth outcome. The conditional information gain of $M_j$ given $S$ is
 $$
-\\mathrm{IG}(M\_j \\mid S) = I(Y\_j; Z \\mid Y\_S), \\tag{8}
+\mathrm{IG}(M_j \mid S) = I(Y_j; Z \mid Y_S), \tag{8}
 $$
-where $I(,\\cdot,;,\\cdot \\mid ,\\cdot,)$ is conditional mutual information. This measures how much additional information about the correct answer $M\_j$ provides *after* conditioning on the current ensemble. Models providing novel information score higher; models repeating existing information score lower.
+where $I(\,\cdot\,;\,\cdot \mid \,\cdot\,)$ is conditional mutual information. This measures how much additional information about the correct answer $M_j$ provides *after* conditioning on the current ensemble. Models providing novel information score higher; models repeating existing information score lower.
 
-**Outcome-based operationalization.** Exact mutual-information estimation over free-form text is difficult and ill-posed. We resolve the ambiguity by defining information gain over *correctness events* rather than raw text. Let $Z$ be the task outcome and let $A\_j$ be the correctness indicator of $M\_j$ (and $A\_S$ the correctness indicators of the ensemble). Define the operational information gain
+**Outcome-based operationalization.** Exact mutual-information estimation over free-form text is difficult and ill-posed. We resolve the ambiguity by defining information gain over *correctness events* rather than raw text. Let $Z$ be the task outcome and let $A_j$ be the correctness indicator of $M_j$ (and $A_S$ the correctness indicators of the ensemble). Define the operational information gain
 $$
-\\mathrm{IG}(M\_j \\mid S) = I(A\_j; Z \\mid A\_S). \\tag{9}
+\mathrm{IG}(M_j \mid S) = I(A_j; Z \mid A_S). \tag{9}
 $$
 All variables in (9) are discrete, which makes estimation tractable and removes a major source of ambiguity. The protocol evaluates four estimators of (8)–(9) — agreement-based, entropy-reduction, judge-model, and distributional-output estimators — to reduce dependence on any single modeling assumption (Section 11.7, ablation A6).
 
-**Estimator, conditioning reduction, and bias correction (made explicit).** Equation (9) conditions on the full correctness pattern $A\_S\\in{0,1}^{|S|}$, which has up to $2^{|S|}$ strata and is therefore *sparse* relative to the number of evaluation tasks; the naive plug-in conditional-MI estimator is upward-biased in exactly this regime, so leaving the estimator unspecified would make the IG term — the framework's distinctive content — irreproducible and optimistically inflated. We fix three things.
+**Estimator, conditioning reduction, and bias correction (made explicit).** Equation (9) conditions on the full correctness pattern $A_S\in{0,1}^{|S|}$, which has up to $2^{|S|}$ strata and is therefore *sparse* relative to the number of evaluation tasks; the naive plug-in conditional-MI estimator is upward-biased in exactly this regime, so leaving the estimator unspecified would make the IG term — the framework's distinctive content — irreproducible and optimistically inflated. We fix three things.
 
-*Conditioning reduction.* We condition on the **correct-count sufficient statistic** $c\_S=\\sum\_{i\\in S}A\_{S,i}\\in{0,\\dots,|S|}$ rather than the full pattern, reducing the conditioning support from $2^{|S|}$ to $|S|+1$ cells (`information\\\_gain.conditioning = "correct\\\_count\\\_sufficient\\\_statistic"`). This is the natural reduction for a vote-style fusion in which what matters is *how many* members are correct, not their identities; the full-pattern conditioning is retained only as a sensitivity check on small coalitions.
+*Conditioning reduction.* We condition on the **correct-count sufficient statistic** $c_S=\sum_{i\in S}A_{S,i}\in{0,\dots,|S|}$ rather than the full pattern, reducing the conditioning support from $2^{|S|}$ to $|S|+1$ cells (`information\\\_gain.conditioning = "correct\\\_count\\\_sufficient\\\_statistic"`). This is the natural reduction for a vote-style fusion in which what matters is *how many* members are correct, not their identities; the full-pattern conditioning is retained only as a sensitivity check on small coalitions.
 
-*Plug-in estimator with explicit smoothing.* With $\\widehat{p}(\\cdot)$ the Laplace-smoothed empirical frequencies (additive constant $\\alpha=0.5$ per joint cell, `information\\\_gain.smoothing\\\_alpha`), the operational estimator is
+*Plug-in estimator with explicit smoothing.* With $\widehat{p}(\cdot)$ the Laplace-smoothed empirical frequencies (additive constant $\alpha=0.5$ per joint cell, `information\\\_gain.smoothing\\\_alpha`), the operational estimator is
 $$
-\\widehat{\\mathrm{IG}}(M\_j\\mid S);=;\\widehat{H}(Z\\mid c\_S);-;\\widehat{H}(Z\\mid A\_j,c\_S), \\tag{9a}
+\widehat{\mathrm{IG}}(M_j\mid S)\;=\;\widehat{H}(Z\mid c_S)\;-\;\widehat{H}(Z\mid A_j,c_S), \tag{9a}
 $$
 each conditional entropy being the count-weighted average of per-stratum plug-in entropies on the smoothed counts. Equation (9a) is a deterministic function of the released outcome tensor.
 
-*Bias correction.* Each entropy term carries a **Miller–Madow** correction (Miller, 1955), $\\widehat{H}*{\\mathrm{MM}}=\\widehat{H}*{\\mathrm{plug}}+\\frac{\\widehat{m}-1}{2N\_{\\text{stratum}}}$ with $\\widehat{m}$ the number of observed-support outcome categories, applied per stratum before averaging; this removes the leading $O(1/N)$ entropy bias that otherwise propagates into a spurious positive IG. The response-based vs. outcome-based comparison (Ablation A6) is run under the **same** corrected estimator on both signals, so the comparison isolates the signal rather than confounding it with estimator bias.
+*Bias correction.* Each entropy term carries a **Miller–Madow** correction (Miller, 1955), $\widehat{H}_{\mathrm{MM}}=\widehat{H}_{\mathrm{plug}}+\frac{\widehat{m}-1}{2N_{\text{stratum}}}$ with $\widehat{m}$ the number of observed-support outcome categories, applied per stratum before averaging; this removes the leading $O(1/N)$ entropy bias that otherwise propagates into a spurious positive IG. The response-based vs. outcome-based comparison (Ablation A6) is run under the **same** corrected estimator on both signals, so the comparison isolates the signal rather than confounding it with estimator bias.
 
 ### 4.7 Correlated-failure risk
 
-We define risk as expected correlated failure. Let $E\_i$ be the multidimensional error vector of $M\_i$ (Eq. 2) and let
+We define risk as expected correlated failure. Let $E_i$ be the multidimensional error vector of $M_i$ (Eq. 2) and let
 $$
-\\Sigma = \\mathrm{Cov}(E) \\tag{10}
+\Sigma = \mathrm{Cov}(E) \tag{10}
 $$
 be the covariance matrix over model errors. For ensemble weights $w$, ensemble risk is the quadratic form
 $$
-R(w) = w^{\\top} \\Sigma, w. \\tag{11}
+R(w) = w^{\top} \Sigma\, w. \tag{11}
 $$
-High values indicate that models tend to fail *together*; low values indicate complementary failure structures. The marginal risk contribution of $M\_j$ under weights $w$ is
+High values indicate that models tend to fail *together*; low values indicate complementary failure structures. The marginal risk contribution of $M_j$ under weights $w$ is
 $$
-\\mathrm{MRC}\_j = (\\Sigma w)\_j. \\tag{12}
+\mathrm{MRC}_j = (\Sigma w)_j. \tag{12}
 $$
 Naive sample covariance is notoriously unstable, and small estimation errors can produce dramatically different optimization outcomes. Covariance estimation is therefore treated as a *first-class* problem (Section 11.7, ablation A5): the protocol compares the empirical estimator, Ledoit–Wolf shrinkage (which regularizes toward a structured target), a Bayesian estimator (which incorporates prior uncertainty), and a bootstrap estimator (which quantifies estimation uncertainty).
 
@@ -243,9 +243,9 @@ Naive sample covariance is notoriously unstable, and small estimation errors can
 
 Combining marginal utility, information gain, and risk yields the central ranking primitive:
 $$
-\\mathrm{FMEC}\_j = \\widehat{\\mathrm{MEC}}\_j + \\eta,\\mathrm{IG}\_j - \\lambda,\\mathrm{MRC}\_j, \\tag{13}
+\mathrm{FMEC}_j = \widehat{\mathrm{MEC}}_j + \eta\,\mathrm{IG}_j - \lambda\,\mathrm{MRC}_j, \tag{13}
 $$
-where $\\eta,\\lambda > 0$ control the relative importance of informational novelty and correlated-risk penalty. FMEC **rewards** utility contribution and informational novelty while **penalizing** correlated-failure risk, directly addressing the principal weaknesses identified in Section 1.3.
+where $\eta\,\lambda > 0$ control the relative importance of informational novelty and correlated-risk penalty. FMEC **rewards** utility contribution and informational novelty while **penalizing** correlated-failure risk, directly addressing the principal weaknesses identified in Section 1.3.
 
 
 
@@ -253,19 +253,19 @@ where $\\eta,\\lambda > 0$ control the relative importance of informational nove
 
 ### 5.1 The constrained program
 
-Let $w = (w\_1, \\ldots, w\_n)$ denote ensemble allocation weights. The objective is not to maximize benchmark performance but to maximize expected deployment utility while accounting for informational contribution, risk, cost, and latency. The optimization problem is
+Let $w = (w_1, \ldots, w_n)$ denote ensemble allocation weights. The objective is not to maximize benchmark performance but to maximize expected deployment utility while accounting for informational contribution, risk, cost, and latency. The optimization problem is
 $$
-\\max\_{w}; U(w) \\quad \\text{subject to} \\quad \\sum\_{i=1}^{n} w\_i = 1,;; w\_i \\ge 0,;; C(w) \\le C\_{\\max},;; L(w) \\le L\_{\\max},;; R(w) \\le R\_{\\max}, \\tag{14}
+\max_{w}\; U(w) \quad \text{subject to} \quad \sum_{i=1}^{n} w_i = 1\,\; w_i \ge 0\,\; C(w) \le C_{\max}\,\; L(w) \le L_{\max}\,\; R(w) \le R_{\max}, \tag{14}
 $$
 where the utility aggregates per-model FMEC scores,
 $$
-U(w) = \\sum\_{i=1}^{n} w\_i, \\mathrm{FMEC}*i. \\tag{15}
+U(w) = \sum_{i=1}^{n} w_i\, \mathrm{FMEC}_i. \tag{15}
 $$
 Expanding FMEC yields the explicit objective
 $$
-U(w) = \\sum*{i=1}^{n} w\_i \\left(\\widehat{\\mathrm{MEC}}\_i + \\eta,\\mathrm{IG}\_i - \\lambda,\\mathrm{MRC}\_i\\right). \\tag{16}
+U(w) = \sum_{i=1}^{n} w_i \left(\widehat{\mathrm{MEC}}_i + \eta\,\mathrm{IG}_i - \lambda\,\mathrm{MRC}_i\right). \tag{16}
 $$
-The weights $w$ may represent voting weights, routing probabilities, or mixture coefficients, depending on the fusion mechanism. The combinatorial *set-selection* variant of (14) — choosing $S \\subseteq N$ rather than continuous $w$ — is treated in Section 7 (Algorithm 2) with an approximation guarantee under submodularity.
+The weights $w$ may represent voting weights, routing probabilities, or mixture coefficients, depending on the fusion mechanism. The combinatorial *set-selection* variant of (14) — choosing $S \subseteq N$ rather than continuous $w$ — is treated in Section 7 (Algorithm 2) with an approximation guarantee under submodularity.
 
 ### 5.2 Efficient-frontier interpretation
 
@@ -275,11 +275,11 @@ The program (14) induces an *efficient frontier*. Each feasible ensemble is a po
 
 A key derived efficiency metric is quality-adjusted cost,
 $$
-\\mathrm{QAC} = \\frac{C}{Q}, \\tag{17}
+\mathrm{QAC} = \frac{C}{Q}, \tag{17}
 $$
 with lower values indicating more efficient deployment. QAC separates *absolute performance* from *efficiency*: an ensemble that delivers $95%$ of a frontier model's quality at half its cost has a substantially lower (better) QAC, even though it is marginally weaker in absolute terms. This is the quantity through which the cost-structure hypothesis of Section 1.2 becomes measurable (see also H5, Section 11.1). The relative utility gain of an FMEC ensemble over a baseline is reported as
 $$
-\\mathrm{RUG} = \\frac{U(S\_{\\mathrm{FMEC}}) - U(S\_{\\mathrm{baseline}})}{\\lvert U(S\_{\\mathrm{baseline}})\\rvert}. \\tag{18}
+\mathrm{RUG} = \frac{U(S_{\mathrm{FMEC}}) - U(S_{\mathrm{baseline}})}{\lvert U(S_{\mathrm{baseline}})\rvert}. \tag{18}
 $$
 
 
@@ -290,60 +290,60 @@ We state assumptions explicitly, then establish identifiability, the estimator's
 
 ### 6.1 Assumptions
 
-**A1 (Stable task distribution).** Evaluation pairs $(X, Y) \\sim \\mathcal{D}$ are drawn i.i.d., and the qualification and evaluation distributions agree in expectation, $\\mathcal{D}*{\\text{qual}} \\stackrel{d}{=} \\mathcal{D}*{\\text{eval}}$. Without distributional stability no statistical estimator can generalize.
+**A1 (Stable task distribution).** Evaluation pairs $(X, Y) \sim \mathcal{D}$ are drawn i.i.d., and the qualification and evaluation distributions agree in expectation, $\mathcal{D}_{\text{qual}} \stackrel{d}{=} \mathcal{D}_{\text{eval}}$. Without distributional stability no statistical estimator can generalize.
 
-**A2 (Finite utility variance).** $\\mathrm{Var}(v(S)) < \\infty$ for all $S$. This guarantees existence of Monte Carlo moments; without it, consistency results collapse.
+**A2 (Finite utility variance).** $\mathrm{Var}(v(S)) < \infty$ for all $S$. This guarantees existence of Monte Carlo moments; without it, consistency results collapse.
 
-**A3 (Observable error structure).** Each model has a measurable error vector $E\_i = (E\_{i1}, \\ldots, E\_{im})$, so that $\\Sigma$ in (10) can be estimated. Without observable errors, $\\Sigma$ is undefined.
+**A3 (Observable error structure).** Each model has a measurable error vector $E_i = (E_{i1}, \ldots, E_{im})$, so that $\Sigma$ in (10) can be estimated. Without observable errors, $\Sigma$ is undefined.
 
-**A4 (Non-degenerate diversity).** There exists at least one pair $M\_i, M\_j$ with $I(Y\_i; Z \\mid Y\_j) > 0$ — i.e., at least one model contributes information unavailable from another. This defines the regime in which ensemble optimization matters; absent it, ensembles collapse to benchmark rankings.
+**A4 (Non-degenerate diversity).** There exists at least one pair $M_i, M_j$ with $I(Y_i; Z \mid Y_j) > 0$ — i.e., at least one model contributes information unavailable from another. This defines the regime in which ensemble optimization matters; absent it, ensembles collapse to benchmark rankings.
 
 ### 6.2 Identifiability
 
-FMEC is *identifiable* if $v(S)$ and $\\mathrm{IG}(M\_j \\mid S)$ can be estimated from observable quantities. Under the framework: utility is observed through evaluation outcomes; information gain is estimated from correctness events and ground truth (Eq. 9); risk is estimated from observed error vectors (Eq. 10). Therefore FMEC is identifiable given sufficient evaluation data — a necessary condition for empirical estimation.
+FMEC is *identifiable* if $v(S)$ and $\mathrm{IG}(M_j \mid S)$ can be estimated from observable quantities. Under the framework: utility is observed through evaluation outcomes; information gain is estimated from correctness events and ground truth (Eq. 9); risk is estimated from observed error vectors (Eq. 10). Therefore FMEC is identifiable given sufficient evaluation data — a necessary condition for empirical estimation.
 
 ### 6.3 Consistency of the Monte Carlo estimator
 
 **Proposition (Consistency).** Under A1–A2, with independent coalition samples and a stationary evaluation distribution, the estimator (6) satisfies
 $$
-\\widehat{\\mathrm{MEC}}\_j \\xrightarrow{;a.s.;} \\overline{\\mathrm{MEC}}\_j \\quad \\text{as } K \\to \\infty. \\tag{19}
+\widehat{\mathrm{MEC}}_j \xrightarrow{\;a.s.\;} \overline{\mathrm{MEC}}_j \quad \text{as } K \to \infty. \tag{19}
 $$
-*Proof.* Each summand $v(S\_k \\cup {M\_j}) - v(S\_k)$ is an i.i.d. draw with mean $\\overline{\\mathrm{MEC}}\_j$ and finite variance (A2). The Strong Law of Large Numbers yields almost-sure convergence of the sample mean. $\\qquad\\blacksquare$
+*Proof.* Each summand $v(S_k \cup {M_j}) - v(S_k)$ is an i.i.d. draw with mean $\overline{\mathrm{MEC}}_j$ and finite variance (A2). The Strong Law of Large Numbers yields almost-sure convergence of the sample mean. $\qquad\blacksquare$
 
 ### 6.4 Variance and the cost–precision trade-off
 
-Let $\\sigma\_j^2 = \\mathrm{Var}\\big(v(S \\cup {M\_j}) - v(S)\\big)$. Then
+Let $\sigma_j^2 = \mathrm{Var}\big(v(S \cup {M_j}) - v(S)\big)$. Then
 $$
-\\mathrm{Var}\\big(\\widehat{\\mathrm{MEC}}\_j\\big) = \\frac{\\sigma\_j^2}{K}, \\tag{20}
+\mathrm{Var}\big(\widehat{\mathrm{MEC}}_j\big) = \frac{\sigma_j^2}{K}, \tag{20}
 $$
 so estimation uncertainty decreases at the standard Monte Carlo rate $O(K^{-1/2})$. This is a direct, tunable trade-off between computational cost (number of coalition evaluations) and estimator precision.
 
 ### 6.5 Sample complexity
 
-**Proposition (Sample complexity).** To estimate $\\overline{\\mathrm{MEC}}\_j$ within tolerance $\\epsilon$ with probability at least $1-\\delta$, it suffices (by a Hoeffding-style bound on bounded marginal contributions) to take
+**Proposition (Sample complexity).** To estimate $\overline{\mathrm{MEC}}_j$ within tolerance $\epsilon$ with probability at least $1-\delta$, it suffices (by a Hoeffding-style bound on bounded marginal contributions) to take
 $$
-K = O!\\left(\\frac{\\log(1/\\delta)}{\\epsilon^2}\\right) \\tag{21}
+K = O\!\left(\frac{\log(1/\delta)}{\epsilon^2}\right) \tag{21}
 $$
 coalition samples. Crucially, the requirement grows with desired *precision*, not *exponentially* with model count — which is what makes the approach feasible for moderate-to-large pools.
 
 ### 6.6 Theorem 1 (Information complementarity)
 
-**Theorem 1.** For an ensemble $S$, if $\\mathrm{IG}(M\_j \\mid S) > 0$ then
+**Theorem 1.** For an ensemble $S$, if $\mathrm{IG}(M_j \mid S) > 0$ then
 $$
-H(Z \\mid Y\_S, Y\_j) < H(Z \\mid Y\_S). \\tag{22}
+H(Z \mid Y_S, Y_j) < H(Z \mid Y_S). \tag{22}
 $$
-*Proof.* By definition $\\mathrm{IG}(M\_j \\mid S) = I(Y\_j; Z \\mid Y\_S)$, and the chain rule for conditional mutual information gives $I(Y\_j; Z \\mid Y\_S) = H(Z \\mid Y\_S) - H(Z \\mid Y\_S, Y\_j)$. If the left side is strictly positive, then $H(Z \\mid Y\_S, Y\_j) < H(Z \\mid Y\_S)$. $\\qquad\\blacksquare$
+*Proof.* By definition $\mathrm{IG}(M_j \mid S) = I(Y_j; Z \mid Y_S)$, and the chain rule for conditional mutual information gives $I(Y_j; Z \mid Y_S) = H(Z \mid Y_S) - H(Z \mid Y_S, Y_j)$. If the left side is strictly positive, then $H(Z \mid Y_S, Y_j) < H(Z \mid Y_S)$. $\qquad\blacksquare$
 
 **Interpretation.** Positive conditional information gain *strictly* reduces residual uncertainty about the correct answer. FMEC therefore rewards models that reduce uncertainty, providing a theoretical justification for the information-gain term in (13).
 
 ### 6.7 Theorem 2 (Correlated failure)
 
-**Theorem 2.** Suppose ensemble risk is $R(w) = w^{\\top}\\Sigma w$, and let $M\_i$ and $M\_j$ have identical expected utility. If
+**Theorem 2.** Suppose ensemble risk is $R(w) = w^{\top}\Sigma w$, and let $M_i$ and $M_j$ have identical expected utility. If
 $$
-\\mathrm{Cov}(E\_i, E\_S) < \\mathrm{Cov}(E\_j, E\_S), \\tag{23}
+\mathrm{Cov}(E_i, E_S) < \mathrm{Cov}(E_j, E_S), \tag{23}
 $$
-then replacing $M\_j$ with $M\_i$ reduces ensemble risk and (holding performance fixed) increases utility.
-*Proof.* The marginal risk contribution is $\\mathrm{MRC}\_k = (\\Sigma w)\_k$. Lower covariance with the incumbent ensemble implies $\\mathrm{MRC}\_i < \\mathrm{MRC}\_j$. Since expected utility $Q$ is held fixed and $U = (\\text{performance}) - \\lambda(\\text{risk})$ is decreasing in risk, the substitution increases $U$. $\\qquad\\blacksquare$
+then replacing $M_j$ with $M_i$ reduces ensemble risk and (holding performance fixed) increases utility.
+*Proof.* The marginal risk contribution is $\mathrm{MRC}_k = (\Sigma w)_k$. Lower covariance with the incumbent ensemble implies $\mathrm{MRC}_i < \mathrm{MRC}_j$. Since expected utility $Q$ is held fixed and $U = (\text{performance}) - \lambda(\text{risk})$ is decreasing in risk, the substitution increases $U$. $\qquad\blacksquare$
 
 **Interpretation.** Covariance matters *independently* of benchmark performance: the risk penalty is theoretically motivated, not heuristic.
 
@@ -351,11 +351,11 @@ then replacing $M\_j$ with $M\_i$ reduces ensemble risk and (holding performance
 
 This is the central scientific claim of the paper.
 
-**Proposition 1.** Consider candidates $M\_a, M\_b$ with $\\mathrm{Benchmark}(M\_a) > \\mathrm{Benchmark}(M\_b)$ but $\\mathrm{FMEC}(M\_b) > \\mathrm{FMEC}(M\_a)$. Then there exist ensembles $S$ for which
+**Proposition 1.** Consider candidates $M_a, M_b$ with $\mathrm{Benchmark}(M_a) > \mathrm{Benchmark}(M_b)$ but $\mathrm{FMEC}(M_b) > \mathrm{FMEC}(M_a)$. Then there exist ensembles $S$ for which
 $$
-v(S \\cup {M\_b}) > v(S \\cup {M\_a}). \\tag{24}
+v(S \cup {M_b}) > v(S \cup {M_a}). \tag{24}
 $$
-*Proof sketch.* By (13), a higher FMEC reflects a higher expected conditional utility contribution over the coalition distribution $\\mathcal{S}$; hence $\\mathbb{E}*{S}\\big\[v(S \\cup {M\_b})\\big] > \\mathbb{E}*{S}\\big\[v(S \\cup {M\_a})\\big]$, and a witnessing $S$ attaining the strict inequality exists. $\\qquad\\blacksquare$
+*Proof sketch.* By (13), a higher FMEC reflects a higher expected conditional utility contribution over the coalition distribution $\mathcal{S}$; hence $\mathbb{E}_{S}\big[v(S \cup {M_b})\big] > \mathbb{E}_{S}\big[v(S \cup {M_a})\big]$, and a witnessing $S$ attaining the strict inequality exists. $\qquad\blacksquare$
 
 **Interpretation.** The strongest model need not be the most valuable ensemble member — a direct attack on the benchmark-ranking paradigm.
 
@@ -363,67 +363,67 @@ $$
 
 The set-selection form of (14) is combinatorial: exhaustive search over $2^n$ subsets is infeasible for even moderate $n$. We seek structure.
 
-**Definition.** A set function $v$ is *submodular* if the marginal gain $v(S \\cup {M}) - v(S)$ is non-increasing in $S$ (diminishing returns), and *monotone* if $v(S \\cup {M}) \\ge v(S)$.
+**Definition.** A set function $v$ is *submodular* if the marginal gain $v(S \cup {M}) - v(S)$ is non-increasing in $S$ (diminishing returns), and *monotone* if $v(S \cup {M}) \ge v(S)$.
 
 **Plausibility.** In ensemble systems, the first reasoning model adds substantial value while the tenth similar reasoning model adds less; information gain diminishes as redundancy grows; and the risk term is supermodular in the relevant regime. Hence the *performance-plus-information* component is approximately submodular.
 
 **Proposition 2 (Approximate submodularity).** If (i) utility gains diminish, (ii) information gain diminishes, and (iii) risk penalties increase with ensemble size, then $U(S)$ is approximately submodular.
 
-**Consequence and a precise statement of the guarantee.** For *monotone submodular* maximization under a **cardinality** constraint, the greedy algorithm achieves a $\\left(1 - \\tfrac{1}{e}\\right) \\approx 0.632$ approximation of the optimum (Nemhauser, Wolsey and Fisher, 1978). We emphasize, for rigor, that the program (14) contains **knapsack-type budget** constraints (cost, latency, risk), for which the guarantees are more delicate:
+**Consequence and a precise statement of the guarantee.** For *monotone submodular* maximization under a **cardinality** constraint, the greedy algorithm achieves a $\left(1 - \tfrac{1}{e}\right) \approx 0.632$ approximation of the optimum (Nemhauser, Wolsey and Fisher, 1978). We emphasize, for rigor, that the program (14) contains **knapsack-type budget** constraints (cost, latency, risk), for which the guarantees are more delicate:
 
-* Plain greedy under a single knapsack constraint guarantees $\\tfrac{1}{2}!\\left(1 - \\tfrac{1}{e}\\right)$ (Khuller, Moss and Naor, 1999; Leskovec et al., 2007).
-* A *modified* greedy with partial enumeration recovers $\\left(1 - \\tfrac{1}{e}\\right)$ under a knapsack constraint (Sviridenko, 2004).
-* When $U$ is only $\\gamma$-*weakly* submodular, greedy retains a $\\left(1 - e^{-\\gamma}\\right)$ guarantee (Das and Kempe, 2011).
+* Plain greedy under a single knapsack constraint guarantees $\tfrac{1}{2}\!\left(1 - \tfrac{1}{e}\right)$ (Khuller, Moss and Naor, 1999; Leskovec et al., 2007).
+* A *modified* greedy with partial enumeration recovers $\left(1 - \tfrac{1}{e}\right)$ under a knapsack constraint (Sviridenko, 2004).
+* When $U$ is only $\gamma$-*weakly* submodular, greedy retains a $\left(1 - e^{-\gamma}\right)$ guarantee (Das and Kempe, 2011).
 
 Algorithm 2 (Section 7) implements the budget-feasible greedy; the protocol additionally reports oracle regret (Section 6.12 and Algorithm 4) for small pools to *measure* the realized gap rather than relying solely on worst-case bounds. This corrects a common informal overstatement that plain greedy attains $1 - 1/e$ under budget constraints.
 
 ### 6.10 Generalization bound
 
-FMEC is estimated from finite tasks; will it generalize? Assume bounded utility $|v(S)| \\le B$. By Hoeffding's inequality (Hoeffding, 1963), for the task-averaged utility estimate $\\hat{v}(S)$ over $N$ evaluation tasks,
+FMEC is estimated from finite tasks; will it generalize? Assume bounded utility $|v(S)| \le B$. By Hoeffding's inequality (Hoeffding, 1963), for the task-averaged utility estimate $\hat{v}(S)$ over $N$ evaluation tasks,
 $$
-\\Pr!\\big(,|\\hat{v}(S) - v(S)| > \\epsilon,\\big) \\le 2\\exp!\\left(-\\frac{2N\\epsilon^2}{B^2}\\right), \\tag{25}
+\Pr\!\big(\,|\hat{v}(S) - v(S)| > \epsilon\,\big) \le 2\exp\!\left(-\frac{2N\epsilon^2}{B^2}\right), \tag{25}
 $$
-equivalently, with probability at least $1-\\delta$,
+equivalently, with probability at least $1-\delta$,
 $$
-|\\hat{v}(S) - v(S)| = O!\\left(\\sqrt{\\frac{\\log(1/\\delta)}{N}}\\right). \\tag{26}
+|\hat{v}(S) - v(S)| = O\!\left(\sqrt{\frac{\log(1/\delta)}{N}}\right). \tag{26}
 $$
-As evaluation tasks increase, estimated utility converges to true utility and FMEC rankings become increasingly reliable. (A uniform-convergence statement over a finite family of $\\binom{n}{k}$ candidate ensembles follows by a union bound, replacing $\\log(1/\\delta)$ with $\\log(,|,\\text{family},|/\\delta)$.)
+As evaluation tasks increase, estimated utility converges to true utility and FMEC rankings become increasingly reliable. (A uniform-convergence statement over a finite family of $\binom{n}{k}$ candidate ensembles follows by a union bound, replacing $\log(1/\delta)$ with $\log(\,|\,\text{family}\,|/\delta)$.)
 
 ### 6.11 Ranking consistency
 
-Practitioners care which model is selected, not whether a score converges numerically. Let $\\mathrm{FMEC}\_i^{*}$ be the true contribution and $\\widehat{\\mathrm{FMEC}}\_i$ the estimate. The estimator is ranking-consistent if
+Practitioners care which model is selected, not whether a score converges numerically. Let $\mathrm{FMEC}_i^{*}$ be the true contribution and $\widehat{\mathrm{FMEC}}_i$ the estimate. The estimator is ranking-consistent if
 $$
-\\Pr!\\big(\\widehat{\\mathrm{FMEC}}\_i > \\widehat{\\mathrm{FMEC}}\_j\\big) \\to 1 \\quad \\text{whenever } \\mathrm{FMEC}\_i^{*} > \\mathrm{FMEC}\_j^{\*}. \\tag{27}
+\Pr\!\big(\widehat{\mathrm{FMEC}}_i > \widehat{\mathrm{FMEC}}_j\big) \to 1 \quad \text{whenever } \mathrm{FMEC}_i^{*} > \mathrm{FMEC}_j^{*}. \tag{27}
 $$
-**Proposition (Ranking consistency).** Under consistent MEC estimation (6.3), consistent information-gain estimation, and consistent covariance estimation, $\\widehat{\\mathrm{FMEC}}$ is ranking-consistent. *Sketch.* Each component converges; FMEC is a continuous combination of the components; the continuous-mapping theorem implies convergence of rankings whenever true scores are separated by a non-zero margin. This result is arguably more important than estimator consistency, because it governs *selection stability*.
+**Proposition (Ranking consistency).** Under consistent MEC estimation (6.3), consistent information-gain estimation, and consistent covariance estimation, $\widehat{\mathrm{FMEC}}$ is ranking-consistent. *Sketch.* Each component converges; FMEC is a continuous combination of the components; the continuous-mapping theorem implies convergence of rankings whenever true scores are separated by a non-zero margin. This result is arguably more important than estimator consistency, because it governs *selection stability*.
 
 ### 6.12 Oracle ensemble and oracle regret
 
 Define the oracle ensemble
 $$
-S^{*} = \\arg\\max\_{S} v(S). \\tag{28}
+S^{*} = \arg\max_{S} v(S). \tag{28}
 $$
 $S^{*}$ is generally unobservable (it requires evaluating every subset) but provides a theoretical reference. The performance measure is *regret*,
 $$
-\\mathrm{Regret}(\\hat{S}) = v(S^{*}) - v(\\hat{S}), \\tag{29}
+\mathrm{Regret}(\hat{S}) = v(S^{*}) - v(\hat{S}), \tag{29}
 $$
-with relative regret $\\mathrm{Regret}(\\hat S)/v(S^{*})$. An ideal procedure satisfies $\\mathrm{Regret}(\\hat{S}) \\to 0$. This decision-theoretic objective is substantially stronger than merely demonstrating improvement over a baseline: it measures *distance from the best feasible ensemble*.
+with relative regret $\mathrm{Regret}(\hat S)/v(S^{*})$. An ideal procedure satisfies $\mathrm{Regret}(\hat{S}) \to 0$. This decision-theoretic objective is substantially stronger than merely demonstrating improvement over a baseline: it measures *distance from the best feasible ensemble*.
 
 ### 6.13 Recoverability of the optimal ensemble
 
 **Assumption (Approximate additivity).** Suppose utility is approximately additive,
 $$
-v(S) = \\sum\_{i \\in S} u\_i + \\varepsilon(S), \\tag{30}
+v(S) = \sum_{i \in S} u_i + \varepsilon(S), \tag{30}
 $$
-where $\\varepsilon(S)$ captures interaction effects.
+where $\varepsilon(S)$ captures interaction effects.
 
-**Theorem (Informal recoverability).** If $|\\varepsilon(S)|$ is uniformly bounded and sufficiently small, then selecting models in descending order of FMEC converges toward the oracle ensemble. **Interpretation.** FMEC works best when interaction effects *exist* (otherwise A4 fails and ensembles collapse to rankings) but *do not dominate* utility — a realistic regime for many ensemble systems.
+**Theorem (Informal recoverability).** If $|\varepsilon(S)|$ is uniformly bounded and sufficiently small, then selecting models in descending order of FMEC converges toward the oracle ensemble. **Interpretation.** FMEC works best when interaction effects *exist* (otherwise A4 fails and ensembles collapse to rankings) but *do not dominate* utility — a realistic regime for many ensemble systems.
 
 ### 6.14 Decision-theoretic reformulation
 
-Ensemble construction is naturally a *statistical decision problem*. Let $\\mathcal{M} = {M\_1, \\ldots, M\_n}$ be the model universe and $\\mathcal{A}$ the set of feasible ensembles; each action $a \\in \\mathcal{A}$ selects an ensemble. The objective is
+Ensemble construction is naturally a *statistical decision problem*. Let $\mathcal{M} = {M_1, \ldots, M_n}$ be the model universe and $\mathcal{A}$ the set of feasible ensembles; each action $a \in \mathcal{A}$ selects an ensemble. The objective is
 $$
-a^{\*} = \\arg\\max\_{a \\in \\mathcal{A}} \\mathbb{E}\[U(a)]. \\tag{31}
+a^{*} = \arg\max_{a \in \mathcal{A}} \mathbb{E}[U(a)]. \tag{31}
 $$
 Under this framing, *benchmark ranking*, *random selection*, and *FMEC optimization* are all decision rules and become directly comparable on a common axis (expected utility, and regret against (28)).
 
@@ -435,7 +435,7 @@ The methodology is operationalized by four algorithms. They are stated in `algor
 
 ### 7.1 Algorithm 1 — FMEC Estimation
 
-**Purpose.** Estimate $\\mathrm{FMEC}\_i$ for every candidate $M\_i$ via coalition sampling (Eq. 6), outcome-based information gain (Eq. 9), and covariance-aware risk (Eqs. 10–12).
+**Purpose.** Estimate $\mathrm{FMEC}_i$ for every candidate $M_i$ via coalition sampling (Eq. 6), outcome-based information gain (Eq. 9), and covariance-aware risk (Eqs. 10–12).
 
 ```latex
 \\\\begin{algorithm}\\\[t]
@@ -473,13 +473,13 @@ The methodology is operationalized by four algorithms. They are stated in `algor
 
 **Computational complexity.** Monte Carlo estimation requires $O(nK)$ utility evaluations; information estimation is $O(nm)$; covariance estimation is $O(n^2 m)$. The overall cost is
 $$
-O\\big(nK + n^2 m\\big), \\tag{32}
+O\big(nK + n^2 m\big), \tag{32}
 $$
 i.e., *linear* in the coalition budget $K$ and at most *quadratic* in the model count $n$ — never exponential.
 
 ### 7.2 Algorithm 2 — Greedy Constrained FMEC Ensemble Selection
 
-**Purpose.** Construct an ensemble $S$ that maximizes utility under the budget constraints of (14). The algorithm adds, at each step, the feasible candidate with the largest marginal utility gain $\\Delta U(M\_i \\mid S)$, halting when no feasible candidate remains.
+**Purpose.** Construct an ensemble $S$ that maximizes utility under the budget constraints of (14). The algorithm adds, at each step, the feasible candidate with the largest marginal utility gain $\Delta U(M_i \mid S)$, halting when no feasible candidate remains.
 
 ```latex
 \\\\begin{algorithm}\\\[t]
@@ -511,11 +511,11 @@ i.e., *linear* in the coalition budget $K$ and at most *quadratic* in the model 
 \\\\end{algorithm}
 ```
 
-**Approximation guarantee.** If $U(\\cdot)$ is monotone submodular under a cardinality constraint, Algorithm 2 attains $\\left(1 - \\tfrac{1}{e}\\right)$ of the optimum (Nemhauser, Wolsey and Fisher, 1978). Under the knapsack-type budgets of (14), plain greedy attains $\\tfrac{1}{2}!\\left(1 - \\tfrac{1}{e}\\right)$, and the partial-enumeration variant attains $\\left(1 - \\tfrac{1}{e}\\right)$ (Sviridenko, 2004) (Section 6.9). Complexity is $O(n^2)$ marginal-utility evaluations in the worst case (at most $n$ rounds, each scanning at most $n$ candidates); with cached per-model FMEC and incremental risk updates, each $\\Delta U$ evaluation is $O(n)$ for the $(\\Sigma w)$ term.
+**Approximation guarantee.** If $U(\cdot)$ is monotone submodular under a cardinality constraint, Algorithm 2 attains $\left(1 - \tfrac{1}{e}\right)$ of the optimum (Nemhauser, Wolsey and Fisher, 1978). Under the knapsack-type budgets of (14), plain greedy attains $\tfrac{1}{2}\!\left(1 - \tfrac{1}{e}\right)$, and the partial-enumeration variant attains $\left(1 - \tfrac{1}{e}\right)$ (Sviridenko, 2004) (Section 6.9). Complexity is $O(n^2)$ marginal-utility evaluations in the worst case (at most $n$ rounds, each scanning at most $n$ candidates); with cached per-model FMEC and incremental risk updates, each $\Delta U$ evaluation is $O(n)$ for the $(\Sigma w)$ term.
 
 ### 7.3 Algorithm 3 — Nested (Cluster) Bootstrap FMEC Validation
 
-**Purpose.** Quantify uncertainty *honestly*. The naive bootstrap that resamples only tasks captures task-sampling variance alone and is **silent on the two largest run-to-run sources** in a black-box-LLM study — generation variance (the same model, same task, same decoding, different draw) and adjudication variance (the judge's own non-determinism). Algorithm 3 therefore resamples at two levels — tasks (clusters) *and* replicates within a task — and resamples the judge on the adjudication subsample, so that the BCa intervals and the recommendation-stability statistics reflect total variance (Eq. 20a), not a fraction of it. It returns $95%$ BCa intervals for each $\\mathrm{FMEC}\_i$, the variance decomposition, per-model selection frequency, and the Recommendation-Stability Probability $\\mathrm{RSP}$ (Eq. 51).
+**Purpose.** Quantify uncertainty *honestly*. The naive bootstrap that resamples only tasks captures task-sampling variance alone and is **silent on the two largest run-to-run sources** in a black-box-LLM study — generation variance (the same model, same task, same decoding, different draw) and adjudication variance (the judge's own non-determinism). Algorithm 3 therefore resamples at two levels — tasks (clusters) *and* replicates within a task — and resamples the judge on the adjudication subsample, so that the BCa intervals and the recommendation-stability statistics reflect total variance (Eq. 20a), not a fraction of it. It returns $95%$ BCa intervals for each $\mathrm{FMEC}_i$, the variance decomposition, per-model selection frequency, and the Recommendation-Stability Probability $\mathrm{RSP}$ (Eq. 51).
 
 ```latex
 \\\\begin{algorithm}\\\[t]
@@ -550,11 +550,11 @@ i.e., *linear* in the coalition budget $K$ and at most *quadratic* in the model 
 \\\\end{algorithm}
 ```
 
-**Interpretation.** $\\mathrm{SelFreq}*i \\approx 1$ indicates an indispensable model; $\\approx 0.5$ an unstable contribution; $\\approx 0$ a rarely useful model. **Crucially, $\\mathrm{RSP}$ and $\\mathrm{SelFreq}$ are now computed over resamples that perturb all three variance components**, so they no longer overstate stability by ignoring generation and adjudication noise. Complexity is $O\\big(B \\cdot (nK + n^2 m + n^2)\\big)$; the inner replicate resample adds only a constant factor because it draws from the already-collected $R$ replicates rather than re-querying the providers — the cost of capturing $\\sigma^2*{\\mathrm{gen}}$ is paid once, at collection, in the $R$ replicates of the tensor. BCa is preferred over the percentile interval for its robustness to the skew and bias of these nonlinear functionals.
+**Interpretation.** $\mathrm{SelFreq}_i \approx 1$ indicates an indispensable model; $\approx 0.5$ an unstable contribution; $\approx 0$ a rarely useful model. **Crucially, $\mathrm{RSP}$ and $\mathrm{SelFreq}$ are now computed over resamples that perturb all three variance components**, so they no longer overstate stability by ignoring generation and adjudication noise. Complexity is $O\big(B \cdot (nK + n^2 m + n^2)\big)$; the inner replicate resample adds only a constant factor because it draws from the already-collected $R$ replicates rather than re-querying the providers — the cost of capturing $\sigma^2_{\mathrm{gen}}$ is paid once, at collection, in the $R$ replicates of the tensor. BCa is preferred over the percentile interval for its robustness to the skew and bias of these nonlinear functionals.
 
 ### 7.4 Algorithm 4 — Oracle-Regret Evaluation (small pools)
 
-**Purpose.** For small candidate pools ($n \\le 20$), enumerate all ensembles to obtain the oracle $S^{\*}$ (Eq. 28) and measure regret (Eq. 29) directly, validating the greedy selection against the true optimum rather than against a worst-case bound.
+**Purpose.** For small candidate pools ($n \le 20$), enumerate all ensembles to obtain the oracle $S^{*}$ (Eq. 28) and measure regret (Eq. 29) directly, validating the greedy selection against the true optimum rather than against a worst-case bound.
 
 ```latex
 \\\\begin{algorithm}\\\[t]
@@ -576,7 +576,7 @@ i.e., *linear* in the coalition budget $K$ and at most *quadratic* in the model 
 \\\\end{algorithm}
 ```
 
-**Complexity.** $O(2^n)$ utility evaluations; tractable only for $n \\le 20$ and used as a *gold-standard diagnostic* on a representative sub-pool, not as a production procedure.
+**Complexity.** $O(2^n)$ utility evaluations; tractable only for $n \le 20$ and used as a *gold-standard diagnostic* on a representative sub-pool, not as a production procedure.
 
 
 
@@ -598,77 +598,77 @@ Subsystems (i)–(ii) constitute the *serving path* (how a final answer is produ
 
 ### 8.2 Subsystem (i): constituent expert models
 
-Each expert $M\_i$ is a frozen LLM with attribute tuple (Eq. 1). The illustrative pool of the motivating example consists of mid-tier open-weight and commodity models (e.g., a fast general model, a strong math/coding model, and a long-context/agentic model), with one or more frontier models reserved as *baselines and optional judges*. Models expose a single interface — `chat.completions` with `(system\\\_prompt, user\\\_prompt, temperature, max\\\_tokens, response\\\_format)` — and return text or schema-constrained JSON. **Inputs:** task prompt and decoding settings. **Process:** autoregressive generation (exogenous). **Outputs:** a `ModelAnswer` (free-form) or a `CandidateSolution` (structured: thesis, reasoning, optional code, confidence). The expert layer is the unit over which capability $\\mu\_i$, cost $c\_i$, latency $l\_i$, robustness $r\_i$, and the error vector $E\_i$ are measured.
+Each expert $M_i$ is a frozen LLM with attribute tuple (Eq. 1). The illustrative pool of the motivating example consists of mid-tier open-weight and commodity models (e.g., a fast general model, a strong math/coding model, and a long-context/agentic model), with one or more frontier models reserved as *baselines and optional judges*. Models expose a single interface — `chat.completions` with `(system\\\_prompt, user\\\_prompt, temperature, max\\\_tokens, response\\\_format)` — and return text or schema-constrained JSON. **Inputs:** task prompt and decoding settings. **Process:** autoregressive generation (exogenous). **Outputs:** a `ModelAnswer` (free-form) or a `CandidateSolution` (structured: thesis, reasoning, optional code, confidence). The expert layer is the unit over which capability $\mu_i$, cost $c_i$, latency $l_i$, robustness $r_i$, and the error vector $E_i$ are measured.
 
 ### 8.3 Subsystem (ii): the fusion operator
 
 The fusion operator $f$ maps a set of expert outputs to a single answer. It has four stages: **fan-out** (send the same task to several experts in parallel), **independent reasoning** (each expert solves without seeing the others), **normalization** (convert each answer to a common schema: conclusion, reasoning, uncertainty, citations, code), and **adjudication/synthesis** (a judge model, deterministic verifier, or voting rule produces the final answer). Schematically,
 $$
-\\text{Prompt} \\rightarrow {M\_1, M\_2, \\ldots, M\_n} \\rightarrow \\text{Adjudicator} \\rightarrow \\text{Final Answer}. \\tag{33b}
+\text{Prompt} \rightarrow {M_1, M_2, \ldots, M_n} \rightarrow \text{Adjudicator} \rightarrow \text{Final Answer}. \tag{33b}
 $$
 The framework is agnostic to the choice of $f$; three concrete instances are supported and used in the protocol:
 
 1. **Judge-based synthesis.** A judge LLM compares candidate answers under a strict adjudication rubric (Appendix C.2) and returns a `FusionResult` (final answer, winning models, disagreements, confidence, rationale). The judge is instructed not to average and to penalize hallucination.
 2. **Cost-aware weighted fusion.** Each expert is assigned a score and normalized weight
 $$
-s\_i = \\frac{q\_i, r\_i}{c\_i^{,a}, \\ell\_i^{,b}}, \\qquad w\_i = \\frac{s\_i}{\\sum\_{j} s\_j}, \\tag{34}
+s_i = \frac{q_i\, r_i}{c_i^{a}\, \ell_i^{b}}, \qquad w_i = \frac{s_i}{\sum_{j} s_j}, \tag{34}
 $$
 with exponents $a,b>0$ controlling cost- and latency-sensitivity. These weights instantiate $w$ in (11)–(15) for voting/mixture fusion.
 3. **Verifier-augmented fusion.** Candidates are scored *deterministically* (executable code is run in a sandbox; arithmetic, schema, and citation checks are applied) before any LLM judging, and the highest deterministic score wins ties broken by self-reported confidence. This is the most robust instance for verifiable tasks.
 
 **Fusion-quality, cost, and latency relations.** The expected quality of the fused answer is a function of individual qualities and pairwise error correlations,
 $$
-Q\_F = f\\big(q\_1, \\ldots, q\_n,; \\rho\_{12}, \\rho\_{13}, \\ldots, \\rho\_{ij}\\big), \\tag{35}
+Q_F = f\big(q_1, \ldots, q_n; \rho_{12}, \rho_{13}, \ldots, \rho_{ij}\big), \tag{35}
 $$
 the fused cost is additive in the experts plus the judge/synthesizer,
 $$
-C\_F = \\sum\_{i=1}^{n} C\_i + C\_J, \\tag{36}
+C_F = \sum_{i=1}^{n} C_i + C_J, \tag{36}
 $$
 and, with parallel fan-out, total latency is dominated by the slowest expert plus the adjudicator,
 $$
-T\_F \\approx \\max\_i T\_i + T\_J. \\tag{37}
+T_F \approx \max_i T_i + T_J. \tag{37}
 $$
 Two limiting calculations make the mechanism precise. If $n=3$ experts have independent errors and equal accuracy $p$, majority-vote correctness is
 $$
-P(\\text{majority correct}) = 3p^2 - 2p^3, \\tag{38}
+P(\text{majority correct}) = 3p^2 - 2p^3, \tag{38}
 $$
-e.g., $p=0.75 \\Rightarrow 0.844$. For *verifiable* tasks with iterative repair over $k$ attempts,
+e.g., $p=0.75 \Rightarrow 0.844$. For *verifiable* tasks with iterative repair over $k$ attempts,
 $$
-P(\\text{correct after } k \\text{ attempts}) = 1 - (1-p)^k, \\tag{39}
+P(\text{correct after } k \text{ attempts}) = 1 - (1-p)^k, \tag{39}
 $$
-e.g., $p=0.70,, k=3 \\Rightarrow 0.973$. Equations (38)–(39) hold under independence; real LLM errors are correlated, which is precisely why FMEC penalizes correlated risk (Eq. 11) and rewards *informative* diversity (Eq. 9) rather than diversity per se.
+e.g., $p=0.70\, k=3 \Rightarrow 0.973$. Equations (38)–(39) hold under independence; real LLM errors are correlated, which is precisely why FMEC penalizes correlated risk (Eq. 11) and rewards *informative* diversity (Eq. 9) rather than diversity per se.
 
 ### 8.4 Subsystem (iii): the FMEC estimation-and-selection pipeline
 
 This is the offline analysis path, organized as five sequential layers; the data transformation at each layer is given in Section 8.6.
 
 * **Layer 1 — Benchmark qualification.** Filter $N$ to models above the percentile threshold (Eq. eligibility, Section 11.2). *In:* public/internal benchmark vectors. *Out:* qualified pool.
-* **Layer 2 — Evaluation and annotation.** Run the qualified pool on the held-out task suite; record correctness indicators $A\_{it}$ and multidimensional error vectors $E\_{it}$ (Eq. 2). *Out:* per-(model, task) outcome and error records.
-* **Layer 3 — Information-gain estimation.** Estimate $\\mathrm{IG}(M\_j \\mid S)$ from correctness events (Eq. 9). *Out:* per-model information-gain scores.
-* **Layer 4 — Risk estimation.** Estimate $\\widehat{\\Sigma}$ (Eq. 10) and marginal risk contributions (Eq. 12). *Out:* covariance matrix and $\\mathrm{MRC}$ vector.
-* **Layer 5 — FMEC scoring and constrained optimization.** Combine via (13); run Algorithm 2 to select $S^{\*}$ under budgets (14). *Out:* FMEC table and selected ensemble.
+* **Layer 2 — Evaluation and annotation.** Run the qualified pool on the held-out task suite; record correctness indicators $A_{it}$ and multidimensional error vectors $E_{it}$ (Eq. 2). *Out:* per-(model, task) outcome and error records.
+* **Layer 3 — Information-gain estimation.** Estimate $\mathrm{IG}(M_j \mid S)$ from correctness events (Eq. 9). *Out:* per-model information-gain scores.
+* **Layer 4 — Risk estimation.** Estimate $\widehat{\Sigma}$ (Eq. 10) and marginal risk contributions (Eq. 12). *Out:* covariance matrix and $\mathrm{MRC}$ vector.
+* **Layer 5 — FMEC scoring and constrained optimization.** Combine via (13); run Algorithm 2 to select $S^{*}$ under budgets (14). *Out:* FMEC table and selected ensemble.
 
 Algorithm 1 implements Layers 2–5 for scoring; Algorithm 2 implements the selection; Algorithm 3 wraps Layers 2–5 in a bootstrap; Algorithm 4 provides the oracle reference for Layer 5.
 
 ### 8.5 Subsystem (iv): the optional learned router
 
-A mature system should not always call all experts — that is wasteful. It learns a *policy* $\\pi$ mapping a task to an action (which experts to call, whether to invoke the judge, the verifier, retrieval, etc.):
+A mature system should not always call all experts — that is wasteful. It learns a *policy* $\pi$ mapping a task to an action (which experts to call, whether to invoke the judge, the verifier, retrieval, etc.):
 $$
-\\pi(a \\mid x), \\tag{40}
+\pi(a \mid x), \tag{40}
 $$
 chosen to maximize expected net utility,
 $$
-\\max\_{\\pi}; \\mathbb{E}\\big\[,Q(x,a) - \\lambda, C(a) - \\mu, L(a) - \\gamma, R(x,a),\\big], \\tag{41}
+\max_{\pi}\; \mathbb{E}\big[\,Q(x,a) - \lambda\, C(a) - \mu\, L(a) - \gamma\, R(x,a)\,\big], \tag{41}
 $$
-where $\\lambda,\\mu,\\gamma$ are penalty weights. Online, for task $x\_t$ and action $a\_t$ the system observes reward
+where $\lambda\,\mu\,\gamma$ are penalty weights. Online, for task $x_t$ and action $a_t$ the system observes reward
 $$
-r\_t = Q\_t - \\lambda, C\_t - \\mu, L\_t, \\tag{42}
+r_t = Q_t - \lambda\, C_t - \mu\, L_t, \tag{42}
 $$
 and learns the value-maximizing action,
 $$
-a\_t = \\arg\\max\_{a} \\mathbb{E}\[,r\_t \\mid x\_t, a,]. \\tag{43}
+a_t = \arg\max_{a} \mathbb{E}[\,r_t \mid x_t, a\,]. \tag{43}
 $$
-This is a **contextual bandit**; a baseline $\\varepsilon$-greedy estimator updates action-values incrementally per context (Appendix C.4 gives the reference implementation). The router consumes the FMEC table (Layer 5) as a prior over which experts are worth calling for which task class, closing the loop between offline selection and online serving.
+This is a **contextual bandit**; a baseline $\varepsilon$-greedy estimator updates action-values incrementally per context (Appendix C.4 gives the reference implementation). The router consumes the FMEC table (Layer 5) as a prior over which experts are worth calling for which task class, closing the loop between offline selection and online serving.
 
 ### 8.6 End-to-end Input–Process–Output (IPO) model
 
@@ -676,14 +676,14 @@ The research methodology — *not* the served product — has the following IPO 
 
 |Stage|Inputs|Process|Outputs|
 |-|-|-|-|
-|**0. Qualification**|Benchmark-percentile vectors per candidate; threshold $P\_{\\min}$|Threshold filter; optional stratified sampling by family/scale/cluster|Qualified, de-biased candidate pool $N$|
-|**1. Generation**|Held-out task suite $T$; prompt templates; decoding settings|Parallel fan-out to each $M\_i$; structured-output capture|Raw answer records $Y\_{it}$ (text/JSON)|
-|**2. Scoring \& annotation**|Raw answers $Y\_{it}$; ground truth $Z\_t$; rubric/verifier|Deterministic scoring + taxonomy labeling|Correctness indicators $A\_{it}$; error vectors $E\_{it}$|
-|**3. Coalition sampling**|$A,E$ records; coalition count $K$; utility weights $\\theta$|Monte Carlo coalition draws; utility $v(\\cdot)$ evaluation (Eq. 3)|$\\widehat{\\mathrm{MEC}}\_i$ (Eq. 6)|
-|**4. Information \& risk**|$A\_{it}$, $E\_{it}$|Conditional-MI estimation (Eq. 9); covariance estimation (Eq. 10), $\\mathrm{MRC}$ (Eq. 12)|$\\mathrm{IG}\_i$; $\\widehat{\\Sigma}$; $\\mathrm{MRC}\_i$|
-|**5. FMEC \& selection**|$\\widehat{\\mathrm{MEC}}, \\mathrm{IG}, \\mathrm{MRC}$; $\\eta,\\lambda$; budgets|Combine (Eq. 13); greedy constrained selection (Alg. 2)|FMEC table; selected ensemble $S^{\*}$; weights $w$|
-|**6. Validation**|Tasks $T$; bootstrap count $B$|Bootstrap (Alg. 3); hypothesis tests; oracle regret (Alg. 4)|BCa CIs; $\\mathrm{RSP}$; $p$-values; effect sizes; regret|
-|**7. Serving (optional)**|New query $x$; $S^{\*}$/router policy $\\pi$|Fusion operator (Sec. 8.3); router (Sec. 8.5)|Final fused answer + confidence|
+|**0. Qualification**|Benchmark-percentile vectors per candidate; threshold $P_{\min}$|Threshold filter; optional stratified sampling by family/scale/cluster|Qualified, de-biased candidate pool $N$|
+|**1. Generation**|Held-out task suite $T$; prompt templates; decoding settings|Parallel fan-out to each $M_i$; structured-output capture|Raw answer records $Y_{it}$ (text/JSON)|
+|**2. Scoring \& annotation**|Raw answers $Y_{it}$; ground truth $Z_t$; rubric/verifier|Deterministic scoring + taxonomy labeling|Correctness indicators $A_{it}$; error vectors $E_{it}$|
+|**3. Coalition sampling**|$A,E$ records; coalition count $K$; utility weights $\theta$|Monte Carlo coalition draws; utility $v(\cdot)$ evaluation (Eq. 3)|$\widehat{\mathrm{MEC}}_i$ (Eq. 6)|
+|**4. Information \& risk**|$A_{it}$, $E_{it}$|Conditional-MI estimation (Eq. 9); covariance estimation (Eq. 10), $\mathrm{MRC}$ (Eq. 12)|$\mathrm{IG}_i$; $\widehat{\Sigma}$; $\mathrm{MRC}_i$|
+|**5. FMEC \& selection**|$\widehat{\mathrm{MEC}}, \mathrm{IG}, \mathrm{MRC}$; $\eta\,\lambda$; budgets|Combine (Eq. 13); greedy constrained selection (Alg. 2)|FMEC table; selected ensemble $S^{*}$; weights $w$|
+|**6. Validation**|Tasks $T$; bootstrap count $B$|Bootstrap (Alg. 3); hypothesis tests; oracle regret (Alg. 4)|BCa CIs; $\mathrm{RSP}$; $p$-values; effect sizes; regret|
+|**7. Serving (optional)**|New query $x$; $S^{*}$/router policy $\pi$|Fusion operator (Sec. 8.3); router (Sec. 8.5)|Final fused answer + confidence|
 
 ### 8.7 Interconnections
 
@@ -770,9 +770,9 @@ outcomes = pd.DataFrame(\\\[
 ])
 ```
 
-*Column discussion.* `task\\\_id` (str): foreign key to the task record; **never** a qualification-benchmark id. `model\\\_id` (str): exact gateway identifier, preserved verbatim. `rep` (int): replicate index $0..R-1$; the within-pair replicates are what license the generation-variance component $\\sigma^2\_{\\mathrm{gen}}$ of Eq. (20a) and the cluster bootstrap of Section 11.8. `correct` (int $\\in {0,1}$): the correctness indicator $A\_{it}$; the sole input to the outcome-based information-gain estimator (Eqs. 9, 9a). `e\\\_reason, e\\\_comp, e\\\_halluc, e\\\_ctx, e\\\_plan, e\\\_tool, e\\\_safety, e\\\_refusal` (int $\\in {0,1}$): failure-type flags constituting the error vector $E\_{it}$ (Eq. 2); these populate the covariance estimate $\\widehat\\Sigma$ (Eq. 10). `cost\\\_usd` (float): per-call dollar cost derived from `prompt\\\_tokens`, `completion\\\_tokens`, and the provider price; feeds $C(S)$. `latency\\\_s` (float): wall-clock latency; feeds $L(S)$. `provider\\\_version` (str) and `system\\\_fingerprint` (str): the provider's served-version string and per-request fingerprint (exposed by OpenAI-compatible gateways), recorded on **every** call so that a version change between collection and reproduction is detectable rather than silent (Section 15.1). `seed` (int): the per-call decoding seed where the provider honors one. A row is the atomic unit over which all downstream estimators operate.
+*Column discussion.* `task\\\_id` (str): foreign key to the task record; **never** a qualification-benchmark id. `model\\\_id` (str): exact gateway identifier, preserved verbatim. `rep` (int): replicate index $0..R-1$; the within-pair replicates are what license the generation-variance component $\sigma^2_{\mathrm{gen}}$ of Eq. (20a) and the cluster bootstrap of Section 11.8. `correct` (int $\in {0,1}$): the correctness indicator $A_{it}$; the sole input to the outcome-based information-gain estimator (Eqs. 9, 9a). `e\\\_reason, e\\\_comp, e\\\_halluc, e\\\_ctx, e\\\_plan, e\\\_tool, e\\\_safety, e\\\_refusal` (int $\in {0,1}$): failure-type flags constituting the error vector $E_{it}$ (Eq. 2); these populate the covariance estimate $\widehat\Sigma$ (Eq. 10). `cost\\\_usd` (float): per-call dollar cost derived from `prompt\\\_tokens`, `completion\\\_tokens`, and the provider price; feeds $C(S)$. `latency\\\_s` (float): wall-clock latency; feeds $L(S)$. `provider\\\_version` (str) and `system\\\_fingerprint` (str): the provider's served-version string and per-request fingerprint (exposed by OpenAI-compatible gateways), recorded on **every** call so that a version change between collection and reproduction is detectable rather than silent (Section 15.1). `seed` (int): the per-call decoding seed where the provider honors one. A row is the atomic unit over which all downstream estimators operate.
 
-**Canonicalization and content hash.** The released tensor is canonicalized before hashing — rows sorted by `(task\\\_id, model\\\_id, rep)`, columns fixed to the order above, floats serialized at fixed precision — and a **SHA-256 over the canonical bytes** is published in the manuscript (Section 13.3). A reproduction is *Tier-1 valid* iff it regenerates the published hash; every downstream table (coalition samples, $\\widehat\\Sigma$, FMEC, bootstrap outputs) is then a deterministic function of this hashed object plus the seeds of Section 10.2.
+**Canonicalization and content hash.** The released tensor is canonicalized before hashing — rows sorted by `(task\\\_id, model\\\_id, rep)`, columns fixed to the order above, floats serialized at fixed precision — and a **SHA-256 over the canonical bytes** is published in the manuscript (Section 13.3). A reproduction is *Tier-1 valid* iff it regenerates the published hash; every downstream table (coalition samples, $\widehat\Sigma$, FMEC, bootstrap outputs) is then a deterministic function of this hashed object plus the seeds of Section 10.2.
 
 **(e) Benchmark-qualification table** — one row per candidate; used **only** for the Layer-1 eligibility filter, **never** in final evaluation.
 
@@ -790,11 +790,11 @@ qualification = pd.DataFrame(\\\[
 ])
 ```
 
-*Column discussion.* `family` (str): architecture family, used for stratified sampling to prevent over-representation (Section 11.3). `params\\\_b` (Optional\[float]): parameter count in billions where disclosed; `None` for closed models. `mmlu, gpqa, humaneval, swebench, math` (float $\\in \[0,1]$): public benchmark scores from the cited sources (Section 13.2). `arena\\\_elo` (int): a human-preference Elo rating. `pct\\\_rank` (float $\\in \[0,1]$): composite benchmark percentile; a model qualifies iff `pct\\\_rank` $\\ge P\_{\\min}$.
+*Column discussion.* `family` (str): architecture family, used for stratified sampling to prevent over-representation (Section 11.3). `params\\\_b` (Optional\[float]): parameter count in billions where disclosed; `None` for closed models. `mmlu, gpqa, humaneval, swebench, math` (float $\in [0,1]$): public benchmark scores from the cited sources (Section 13.2). `arena\\\_elo` (int): a human-preference Elo rating. `pct\\\_rank` (float $\in [0,1]$): composite benchmark percentile; a model qualifies iff `pct\\\_rank` $\ge P_{\min}$.
 
 ### 9.3 Derived data structures
 
-**(f) Coalition-utility samples** (Stage 3). One row per Monte Carlo draw; consumed by the $\\widehat{\\mathrm{MEC}}$ average (Eq. 6).
+**(f) Coalition-utility samples** (Stage 3). One row per Monte Carlo draw; consumed by the $\widehat{\mathrm{MEC}}$ average (Eq. 6).
 
 ```python
 coalition\\\_samples = pd.DataFrame(\\\[
@@ -806,9 +806,9 @@ coalition\\\_samples = pd.DataFrame(\\\[
 ], columns=\\\["target\\\_model","k","coalition\\\_ids","v\\\_with","v\\\_without","delta"])
 ```
 
-*Column discussion.* `target\\\_model` (str): the model $M\_i$ whose contribution is being estimated. `k` (int): coalition-sample index $1..K$. `coalition\\\_ids` (list\[str]): the sampled coalition $S\_k \\subseteq N\\setminus{M\_i}$. `v\\\_with`, `v\\\_without` (float): utilities $v(S\_k\\cup{M\_i})$ and $v(S\_k)$ from Eq. 3. `delta` (float): the marginal contribution summand of Eq. 6. The mean of `delta` grouped by `target\\\_model` is $\\widehat{\\mathrm{MEC}}\_i$.
+*Column discussion.* `target\\\_model` (str): the model $M_i$ whose contribution is being estimated. `k` (int): coalition-sample index $1..K$. `coalition\\\_ids` (list\[str]): the sampled coalition $S_k \subseteq N\setminus{M_i}$. `v\\\_with`, `v\\\_without` (float): utilities $v(S_k\cup{M_i})$ and $v(S_k)$ from Eq. 3. `delta` (float): the marginal contribution summand of Eq. 6. The mean of `delta` grouped by `target\\\_model` is $\widehat{\mathrm{MEC}}_i$.
 
-**(g) Error-covariance matrix** $\\widehat\\Sigma$ (Stage 4), symmetric $n \\times n$ (or category-blocked), the input to risk (Eq. 11) and $\\mathrm{MRC}$ (Eq. 12):
+**(g) Error-covariance matrix** $\widehat\Sigma$ (Stage 4), symmetric $n \times n$ (or category-blocked), the input to risk (Eq. 11) and $\mathrm{MRC}$ (Eq. 12):
 
 ```python
 import numpy as np
@@ -832,7 +832,7 @@ fmec\\\_table = pd.DataFrame(\\\[
 ], columns=\\\["model\\\_id","mec\\\_hat","ig","mrc","fmec","ci\\\_low","ci\\\_high","sel\\\_freq"])
 ```
 
-*Column discussion.* `mec\\\_hat` ($\\widehat{\\mathrm{MEC}}\_i$, Eqs. 6, 6a), `ig` ($\\mathrm{IG}\_i$, Eqs. 9, 9a), `mrc` ($\\mathrm{MRC}\_i$, Eq. 12) combine via Eq. 13 into `fmec`. `ci\\\_low`/`ci\\\_high` are the $95%$ BCa bounds from the **nested** bootstrap (Algorithm 3); `sel\\\_freq` is the **per-model selection frequency** $\\mathrm{SelFreq}\_i$ — the fraction of bootstrap replicates in which $M\_i$ is selected — and is distinct from the recommendation-level Recommendation-Stability Probability $\\mathrm{RSP}$ of Eq. (51), which is reported once for the ensemble as a whole. (The two were conflated in earlier drafts; Algorithm 3 now separates them.) Note the intended phenomenon: a model can have a *lower* `mec\\\_hat` yet a *higher* `fmec` once information gain and risk are accounted for (the empirical signature of Proposition 1).
+*Column discussion.* `mec\\\_hat` ($\widehat{\mathrm{MEC}}_i$, Eqs. 6, 6a), `ig` ($\mathrm{IG}_i$, Eqs. 9, 9a), `mrc` ($\mathrm{MRC}_i$, Eq. 12) combine via Eq. 13 into `fmec`. `ci\\\_low`/`ci\\\_high` are the $95%$ BCa bounds from the **nested** bootstrap (Algorithm 3); `sel\\\_freq` is the **per-model selection frequency** $\mathrm{SelFreq}_i$ — the fraction of bootstrap replicates in which $M_i$ is selected — and is distinct from the recommendation-level Recommendation-Stability Probability $\mathrm{RSP}$ of Eq. (51), which is reported once for the ensemble as a whole. (The two were conflated in earlier drafts; Algorithm 3 now separates them.) Note the intended phenomenon: a model can have a *lower* `mec\\\_hat` yet a *higher* `fmec` once information gain and risk are accounted for (the empirical signature of Proposition 1).
 
 
 
@@ -1157,69 +1157,69 @@ STUDY\\\_CONFIG = {
 
 This section specifies a **pre-registered, confirmatory** evaluation protocol for the FMEC framework. It is a *proposed* design: no results are reported. The purpose is twofold. First, it renders the central hypothesis falsifiable by committing — in advance of any data collection — to hypotheses, estimators, decision rules, and stopping criteria. Second, it furnishes the downstream reproduction protocol (Section 12) with a complete experimental contract. Every quantity referenced here is defined in Sections 3–10; the design adds no new modeling assumptions, only the apparatus required to test the ones already stated.
 
-The governing methodological commitment is the separation of the **exploratory** and **confirmatory** regimes (Wagenmakers et al., 2012). All hyperparameters — the utility weights $(\\alpha,\\beta,\\gamma,\\delta)$, the FMEC coefficients $(\\eta,\\lambda)$, the Monte Carlo budget $K$, and the qualification threshold $P\_{\\min}$ — are frozen on a development split that is **disjoint** from the evaluation split. The confirmatory analyses below are then executed once on the held-out evaluation tasks. This discipline is what licenses the inferential statements; absent it, the bootstrap intervals and corrected $p$-values would be uninterpretable.
+The governing methodological commitment is the separation of the **exploratory** and **confirmatory** regimes (Wagenmakers et al., 2012). All hyperparameters — the utility weights $(\alpha\,\beta\,\gamma\,\delta)$, the FMEC coefficients $(\eta\,\lambda)$, the Monte Carlo budget $K$, and the qualification threshold $P_{\min}$ — are frozen on a development split that is **disjoint** from the evaluation split. The confirmatory analyses below are then executed once on the held-out evaluation tasks. This discipline is what licenses the inferential statements; absent it, the bootstrap intervals and corrected $p$-values would be uninterpretable.
 
 ### 11.1 Pre-registered hypotheses
 
-We state five hypotheses. Each is paired with a null, a directional alternative, and the estimator and test that adjudicate it (Sections 11.9–11.11). Let $S\_{\\mathrm{FMEC}}$ denote the ensemble selected by Algorithm 2 under the full objective; $S\_{\\mathrm{Bench}}$ the benchmark-top-$K$ baseline (Baseline 1); $S\_{\\mathrm{NoRisk}}$ the ablation with $\\lambda=0$ (Ablation A2); and $S\_{\\mathrm{NoIG}}$ the ablation with $\\eta=0$ (Ablation A1).
+We state five hypotheses. Each is paired with a null, a directional alternative, and the estimator and test that adjudicate it (Sections 11.9–11.11). Let $S_{\mathrm{FMEC}}$ denote the ensemble selected by Algorithm 2 under the full objective; $S_{\mathrm{Bench}}$ the benchmark-top-$K$ baseline (Baseline 1); $S_{\mathrm{NoRisk}}$ the ablation with $\lambda=0$ (Ablation A2); and $S_{\mathrm{NoIG}}$ the ablation with $\eta=0$ (Ablation A1).
 
 **H1 (Utility dominance).** The FMEC-selected ensemble attains higher expected task utility than the benchmark-ranked ensemble of equal cardinality:
 
 $$
-H\_1:\\quad \\mathbb{E}!\\left\[U(S\_{\\mathrm{FMEC}})\\right] ;>; \\mathbb{E}!\\left\[U(S\_{\\mathrm{Bench}})\\right]. \\tag{44}
+H_1:\quad \mathbb{E}\!\left[U(S_{\mathrm{FMEC}})\right] \;>\; \mathbb{E}\!\left[U(S_{\mathrm{Bench}})\right]. \tag{44}
 $$
 
-The null is $H\_1^0:\\ \\mathbb{E}\[U(S\_{\\mathrm{FMEC}})] \\le \\mathbb{E}\[U(S\_{\\mathrm{Bench}})]$. This is the framework's primary claim; its rejection is necessary (not sufficient) for the central thesis.
+The null is $H_1^0:\ \mathbb{E}[U(S_{\mathrm{FMEC}})] \le \mathbb{E}[U(S_{\mathrm{Bench}})]$. This is the framework's primary claim; its rejection is necessary (not sufficient) for the central thesis.
 
 **H2 (Information–contribution coupling).** Across qualified candidates, conditional information gain is positively associated with marginal ensemble contribution:
 
 $$
-H\_2:\\quad \\rho!\\left(\\mathrm{IG}\_i,\\ \\mathrm{MEC}\_i\\right) ;>; 0, \\tag{45}
+H_2:\quad \rho\!\left(\mathrm{IG}_i,\ \mathrm{MEC}_i\right) \;>\; 0, \tag{45}
 $$
 
-where $\\rho$ is the population Spearman rank correlation. H2 tests the mechanistic premise that complementarity (not raw competence) drives contribution.
+where $\rho$ is the population Spearman rank correlation. H2 tests the mechanistic premise that complementarity (not raw competence) drives contribution.
 
 **H3 (Risk reduction).** Incorporating the marginal-risk term yields a lower-risk ensemble than the risk-agnostic selector:
 
 $$
-H\_3:\\quad R!\\left(\\mathbf{w}*{\\mathrm{FMEC}}\\right) ;<; R!\\left(\\mathbf{w}*{\\mathrm{NoRisk}}\\right), \\tag{46}
+H_3:\quad R\!\left(\mathbf{w}_{\mathrm{FMEC}}\right) \;<\; R\!\left(\mathbf{w}_{\mathrm{NoRisk}}\right), \tag{46}
 $$
 
-with $R(\\cdot)$ the correlated-failure risk of Eq. (11), evaluated at the optimizer's weight vectors.
+with $R(\cdot)$ the correlated-failure risk of Eq. (11), evaluated at the optimizer's weight vectors.
 
 **H4 (Insufficiency of benchmark rank).** Benchmark ranking is *not* a sufficient statistic for ensemble contribution:
 
 $$
-H\_4:\\quad \\tau!\\left(\\mathrm{rank}*{\\mathrm{Bench}},\\ \\mathrm{rank}*{\\mathrm{FMEC}}\\right) ;<; 1, \\tag{47}
+H_4:\quad \tau\!\left(\mathrm{rank}_{\mathrm{Bench}},\ \mathrm{rank}_{\mathrm{FMEC}}\right) \;<\; 1, \tag{47}
 $$
 
-where $\\tau$ is Kendall's rank-correlation coefficient. The substantive (not merely statistical) form requires $\\tau$ to be bounded away from $1$ by a pre-specified margin $\\tau \\le 1-\\Delta\_\\tau$. **We fix $\\Delta\_\\tau = 0.20$** (i.e., the test asserts $\\tau\\le 0.80$), pre-registered before evaluation (`stat\\\_tests.delta\\\_tau`); a value below this would license a "benchmark rank is *almost* sufficient" reading, which the framework declines to claim on a hair's-breadth discordance. Because Kendall's $\\tau$ has sampling variance that depends on the number of qualified models $n$, the protocol includes a pre-registered **power analysis at the realized $n$**: if $n$ is too small for the bound-away-from-one test to achieve $0.80$ power at $\\alpha=0.05$ against $\\tau=0.80$, H4 is reported as underpowered rather than as evidence either way. H4 is the negative claim that motivates the entire framework.
+where $\tau$ is Kendall's rank-correlation coefficient. The substantive (not merely statistical) form requires $\tau$ to be bounded away from $1$ by a pre-specified margin $\tau \le 1-\Delta_\tau$. **We fix $\Delta_\tau = 0.20$** (i.e., the test asserts $\tau\le 0.80$), pre-registered before evaluation (`stat\\\_tests.delta\\\_tau`); a value below this would license a "benchmark rank is *almost* sufficient" reading, which the framework declines to claim on a hair's-breadth discordance. Because Kendall's $\tau$ has sampling variance that depends on the number of qualified models $n$, the protocol includes a pre-registered **power analysis at the realized $n$**: if $n$ is too small for the bound-away-from-one test to achieve $0.80$ power at $\alpha=0.05$ against $\tau=0.80$, H4 is reported as underpowered rather than as evidence either way. H4 is the negative claim that motivates the entire framework.
 
-**H5 (Open-weight non-inferiority).** On the evaluated task distribution, an FMEC-selected ensemble drawn from an **open-weight** candidate pool is non-inferior to the strongest single frontier model, within a pre-specified margin $\\Delta\_U>0$:
+**H5 (Open-weight non-inferiority).** On the evaluated task distribution, an FMEC-selected ensemble drawn from an **open-weight** candidate pool is non-inferior to the strongest single frontier model, within a pre-specified margin $\Delta_U>0$:
 
 $$
-H\_5:\\quad \\mathbb{E}!\\left\[U(S\_{\\mathrm{FMEC}}^{\\mathrm{open}})\\right] ;\\ge; \\mathbb{E}!\\left\[U(m\_{\\mathrm{frontier}}^{\\star})\\right] - \\Delta\_U. \\tag{48}
+H_5:\quad \mathbb{E}\!\left[U(S_{\mathrm{FMEC}}^{\mathrm{open}})\right] \;\ge\; \mathbb{E}\!\left[U(m_{\mathrm{frontier}}^{\star})\right] - \Delta_U. \tag{48}
 $$
 
-H5 is a **non-inferiority** hypothesis and is tested as such (Walker and Nowacki, 2011): the null is *inferiority by more than* $\\Delta\_U$, and rejection supports practical substitutability. The margin $\\Delta\_U$ is a deployment decision and must be *derived*, not guessed. We pre-register a **cost-tied margin**: the open-weight ensemble may give up at most the utility equivalent of the inference cost it saves relative to the frontier model,
+H5 is a **non-inferiority** hypothesis and is tested as such (Walker and Nowacki, 2011): the null is *inferiority by more than* $\Delta_U$, and rejection supports practical substitutability. The margin $\Delta_U$ is a deployment decision and must be *derived*, not guessed. We pre-register a **cost-tied margin**: the open-weight ensemble may give up at most the utility equivalent of the inference cost it saves relative to the frontier model,
 $$
-\\Delta\_U ;=; \\max!\\Big(\\gamma\\big(C\_{\\mathrm{frontier}} - C\_{\\mathrm{open}}\\big),; 0.02,\\big|U(m\_{\\mathrm{frontier}}^\\star)\\big|\\Big), \\tag{48a}
+\Delta_U \;=\; \max\!\Big(\gamma\big(C_{\mathrm{frontier}} - C_{\mathrm{open}}\big),\; 0.02\,\big|U(m_{\mathrm{frontier}}^\star)\big|\Big), \tag{48a}
 $$
-with $\\gamma$ the cost weight of Eq. (3) and the second term an absolute floor of $2%$ of frontier utility (`stat\\\_tests.delta\\\_U\\\_rule = "cost\\\_tied"`, `delta\\\_U\\\_floor = 0.02`). The derivation makes "non-inferior" mean *"the quality shortfall is no larger than the cost saving is worth,"* which is the economically meaningful sense of substitutability and removes the arbitrariness of a hand-set margin.
+with $\gamma$ the cost weight of Eq. (3) and the second term an absolute floor of $2%$ of frontier utility (`stat\\\_tests.delta\\\_U\\\_rule = "cost\\\_tied"`, `delta\\\_U\\\_floor = 0.02`). The derivation makes "non-inferior" mean *"the quality shortfall is no larger than the cost saving is worth,"* which is the economically meaningful sense of substitutability and removes the arbitrariness of a hand-set margin.
 
 The asymmetry across hypotheses is deliberate. H1 and H5 are superiority/non-inferiority claims tested with one-sided procedures; H2 and H3 are mechanistic; H4 is an equivalence-style *bound-away-from-one* claim. Conflating them under a single two-sided test would misstate the scientific content.
 
 ### 11.2 Candidate pool and qualification
 
-The candidate pool $\\mathcal{P}$ comprises every model under consideration for deployment, spanning open-weight and API-served frontier systems across multiple families and parameter scales. The pool should be as large and heterogeneous as the compute budget permits; diversity of *failure modes*, not raw count, is the binding resource (Theorem 2).
+The candidate pool $\mathcal{P}$ comprises every model under consideration for deployment, spanning open-weight and API-served frontier systems across multiple families and parameter scales. The pool should be as large and heterogeneous as the compute budget permits; diversity of *failure modes*, not raw count, is the binding resource (Theorem 2).
 
-Not every candidate is eligible for selection on every task. A model $M\_i$ **qualifies** on task domain $t$ if its development-split score clears a relative threshold:
+Not every candidate is eligible for selection on every task. A model $M_i$ **qualifies** on task domain $t$ if its development-split score clears a relative threshold:
 
 $$
-\\text{qualify}(M\_i, t) ;\\iff; \\mathrm{score}*t(M\_i) ;\\ge; P*{\\min}\\cdot \\max\_{j\\in\\mathcal{P}} \\mathrm{score}\_t(M\_j),
+\text{qualify}(M_i, t) \;\iff\; \mathrm{score}_t(M_i) \;\ge\; P_{\min}\cdot \max_{j\in\mathcal{P}} \mathrm{score}_t(M_j),
 $$
 
-with $P\_{\\min}\\in\[0.75,,0.80]$ fixed in configuration (`qualification\\\_threshold\\\_pct`, Section 10.2). Qualification is a *gate*, not a *selector*: it removes models that are non-competitive on a task so that the contribution estimator is not dominated by candidates that never participate in any high-utility coalition. The qualification and selection populations are enforced disjoint from the evaluation set (`held\\\_out\\\_disjoint\\\_check = True`).
+with $P_{\min}\in[0.75\,0.80]$ fixed in configuration (`qualification\\\_threshold\\\_pct`, Section 10.2). Qualification is a *gate*, not a *selector*: it removes models that are non-competitive on a task so that the contribution estimator is not dominated by candidates that never participate in any high-utility coalition. The qualification and selection populations are enforced disjoint from the evaluation set (`held\\\_out\\\_disjoint\\\_check = True`).
 
 ### 11.3 Stratified sampling of candidates
 
@@ -1267,19 +1267,19 @@ Risk estimation (Eq. 10) requires *labeled failure modes*, not merely binary cor
 7. **Incompleteness / omission** — truncated or partial answers; dropped sub-questions.
 8. **Safety / refusal / policy error** — unwarranted refusal or policy-inappropriate output.
 
-Annotation is performed by a rubric-driven adjudication procedure (Appendix C2) with a human-audited subsample; inter-rater agreement is reported (Cohen's $\\kappa$; Cohen, 1960). The error-category indicator vectors populate $E\_i$ (Eq. 2) and hence the covariance $\\Sigma$ (Eq. 10). The covariance is optionally **block-structured by category** (`block\\\_by\\\_error\\\_category = True`) so that the risk term penalizes models that fail *the same way*, which is the failure geometry Theorem 2 identifies as catastrophic.
+Annotation is performed by a rubric-driven adjudication procedure (Appendix C2) with a human-audited subsample; inter-rater agreement is reported (Cohen's $\kappa$; Cohen, 1960). The error-category indicator vectors populate $E_i$ (Eq. 2) and hence the covariance $\Sigma$ (Eq. 10). The covariance is optionally **block-structured by category** (`block\\\_by\\\_error\\\_category = True`) so that the risk term penalizes models that fail *the same way*, which is the failure geometry Theorem 2 identifies as catastrophic.
 
 ### 11.6 Baselines and treatment
 
-The treatment is $S\_{\\mathrm{FMEC}}$: the ensemble selected by Algorithm 2 under the full objective $\\mathrm{FMEC}\_j=\\widehat{\\mathrm{MEC}}\_j+\\eta,\\mathrm{IG}\_j-\\lambda,\\mathrm{MRC}\_j$ (Eq. 13). It is compared against six baselines, each isolating a competing selection philosophy and each constrained to the **same cardinality and the same budget envelope** so that comparisons are like-for-like:
+The treatment is $S_{\mathrm{FMEC}}$: the ensemble selected by Algorithm 2 under the full objective $\mathrm{FMEC}_j=\widehat{\mathrm{MEC}}_j+\eta\,\mathrm{IG}_j-\lambda\,\mathrm{MRC}_j$ (Eq. 13). It is compared against six baselines, each isolating a competing selection philosophy and each constrained to the **same cardinality and the same budget envelope** so that comparisons are like-for-like:
 
 |#|Baseline|Selection rule|What it isolates|
 |-|-|-|-|
 |1|Benchmark top-$K$|Rank by aggregate benchmark score; take top $K$|The prevailing "pick the best models" heuristic (drives H1, H4)|
 |2|Random|Uniform random size-matched draw from qualified pool|The null value of *any* principled selection|
 |3|Correlation-minimized|Minimize pairwise error correlation only|Diversity *without* contribution or utility|
-|4|Shapley-only|Rank by $\\phi\_j$ (Eq. 7); no IG, no risk|Contribution attribution alone|
-|5|Information-only|Rank by $\\mathrm{IG}\_j$ (Eq. 8–9); no MEC, no risk|Complementarity alone|
+|4|Shapley-only|Rank by $\phi_j$ (Eq. 7); no IG, no risk|Contribution attribution alone|
+|5|Information-only|Rank by $\mathrm{IG}_j$ (Eq. 8–9); no MEC, no risk|Complementarity alone|
 |6|Greedy-utility|Greedily maximize $v(S)$ (Eq. 3) directly, no FMEC decomposition|Whether the FMEC decomposition adds value over naive utility greedy|
 
 Baselines 4 and 5 are the most informative comparators: the gap between the full FMEC objective and each single-term ranker quantifies the marginal value of *combining* contribution, information, and risk rather than optimizing any one in isolation.
@@ -1290,41 +1290,41 @@ Where the baselines isolate competing *philosophies*, the ablations isolate the 
 
 |#|Ablation|Modification|Question answered|
 |-|-|-|-|
-|A1|No information gain|$\\eta = 0$|Does the IG term improve selection beyond contribution and risk?|
-|A2|No risk|$\\lambda = 0$|Does the marginal-risk term reduce realized risk (H3)?|
-|A3|Leave-one-out MEC|Replace Shapley $\\phi\_j$ by single LOO contribution|Does coalition averaging matter, or does drop-one suffice?|
-|A4|Monte Carlo budget|$K\\in{64,128,256,512,1024}$|Estimator stability vs. compute (Eqs. 20–21)|
+|A1|No information gain|$\eta = 0$|Does the IG term improve selection beyond contribution and risk?|
+|A2|No risk|$\lambda = 0$|Does the marginal-risk term reduce realized risk (H3)?|
+|A3|Leave-one-out MEC|Replace Shapley $\phi_j$ by single LOO contribution|Does coalition averaging matter, or does drop-one suffice?|
+|A4|Monte Carlo budget|$K\in{64,128,256,512,1024}$|Estimator stability vs. compute (Eqs. 20–21)|
 |A5|Covariance estimator|sample vs. Ledoit–Wolf vs. block-diagonal|Sensitivity of risk to covariance regularization|
-|A6|Information-gain estimator|response-based $I(Y\_j;Z\\mid Y\_S)$ vs. outcome-based $I(A\_j;Z\\mid A\_S)$|Which information signal is operative?|
+|A6|Information-gain estimator|response-based $I(Y_j;Z\mid Y_S)$ vs. outcome-based $I(A_j;Z\mid A_S)$|Which information signal is operative?|
 
-A4 is reported as a convergence curve: the bootstrap standard error of the FMEC estimate as a function of $K$, expected to contract at the $O(1/\\sqrt{K})$ rate predicted by Eq. (20). A3 directly tests whether the (more expensive) Shapley averaging is empirically necessary or whether the leave-one-out approximation of Eq. (30) is adequate on the realized task distribution.
+A4 is reported as a convergence curve: the bootstrap standard error of the FMEC estimate as a function of $K$, expected to contract at the $O(1/\sqrt{K})$ rate predicted by Eq. (20). A3 directly tests whether the (more expensive) Shapley averaging is empirically necessary or whether the leave-one-out approximation of Eq. (30) is adequate on the realized task distribution.
 
 ### 11.8 Uncertainty quantification by the nested bootstrap and variance decomposition
 
-All point estimates — $\\widehat{\\mathrm{MEC}}\_j$, $\\mathrm{IG}\_j$, $\\mathrm{MRC}\_j$, and the composite $\\mathrm{FMEC}\_j$ — are statistics computed from a finite, *noisy* evaluation sample. The noise has three distinct sources, and a defensible uncertainty statement must account for all three rather than the one a naive bootstrap captures:
+All point estimates — $\widehat{\mathrm{MEC}}_j$, $\mathrm{IG}_j$, $\mathrm{MRC}_j$, and the composite $\mathrm{FMEC}_j$ — are statistics computed from a finite, *noisy* evaluation sample. The noise has three distinct sources, and a defensible uncertainty statement must account for all three rather than the one a naive bootstrap captures:
 
 $$
-\\mathrm{Var}\\big(\\widehat{\\theta}\\big);=;\\underbrace{\\sigma^2\_{\\mathrm{task}}}*{\\text{which items were sampled}};+;\\underbrace{\\sigma^2*{\\mathrm{gen}}}*{\\text{run-to-run generation noise}};+;\\underbrace{\\sigma^2*{\\mathrm{adj}}}\_{\\text{adjudicator noise}}. \\tag{20a}
+\mathrm{Var}\big(\widehat{\theta}\big)\;=\;\underbrace{\sigma^2_{\mathrm{task}}}_{\text{which items were sampled}}\;+\;\underbrace{\sigma^2_{\mathrm{gen}}}_{\text{run-to-run generation noise}}\;+\;\underbrace{\sigma^2_{\mathrm{adj}}}_{\text{adjudicator noise}}. \tag{20a}
 $$
 
-A bootstrap that resamples **only tasks** — the single-level scheme — estimates $\\sigma^2\_{\\mathrm{task}}$ alone and is structurally blind to $\\sigma^2\_{\\mathrm{gen}}$ and $\\sigma^2\_{\\mathrm{adj}}$. In a study whose data-generating process is repeated black-box LLM inference at non-zero (and even at zero) temperature, $\\sigma^2\_{\\mathrm{gen}}$ is not negligible: the same model on the same task can return a different answer, flip a correctness flag, and thereby change $\\widehat{\\Sigma}$ and the selected ensemble across honest re-runs. **Reporting a task-only interval and calling it a stability certificate would overstate stability and is the methodological error this section exists to prevent.**
+A bootstrap that resamples **only tasks** — the single-level scheme — estimates $\sigma^2_{\mathrm{task}}$ alone and is structurally blind to $\sigma^2_{\mathrm{gen}}$ and $\sigma^2_{\mathrm{adj}}$. In a study whose data-generating process is repeated black-box LLM inference at non-zero (and even at zero) temperature, $\sigma^2_{\mathrm{gen}}$ is not negligible: the same model on the same task can return a different answer, flip a correctness flag, and thereby change $\widehat{\Sigma}$ and the selected ensemble across honest re-runs. **Reporting a task-only interval and calling it a stability certificate would overstate stability and is the methodological error this section exists to prevent.**
 
-We therefore (i) collect $R\\ge 5$ independent generations per (model, task) — the replicate axis of the outcome tensor (Section 9.2, `replication.R`) — and (ii) quantify uncertainty by the **nonparametric nested (cluster) bootstrap** (Efron and Tibshirani, 1993; Algorithm 3): the outer loop resamples tasks (clusters) with replacement, the inner loop resamples the $R$ replicates *within* each retained task, and a third resampling draws judge replicates on the adjudication subsample (`replication.adjudication\\\_subsample`, `R\\\_judge`). Each level injects its corresponding variance component, and the three are reported separately via the variance-components decomposition of Eq. (20a) (`bootstrap.report\\\_variance\\\_components`). The inner resample adds only a constant factor in compute because it draws from the *already-collected* replicates rather than re-querying providers — the price of capturing $\\sigma^2\_{\\mathrm{gen}}$ is paid once, at collection, and the bootstrap inherits it for free. The fusion-simulation residual $\\widehat\\sigma\_u$ of Section 4.2.1 is propagated as an additional, separately reported term where the simulated-fusion surrogate is used for $Q(S)$.
+We therefore (i) collect $R\ge 5$ independent generations per (model, task) — the replicate axis of the outcome tensor (Section 9.2, `replication.R`) — and (ii) quantify uncertainty by the **nonparametric nested (cluster) bootstrap** (Efron and Tibshirani, 1993; Algorithm 3): the outer loop resamples tasks (clusters) with replacement, the inner loop resamples the $R$ replicates *within* each retained task, and a third resampling draws judge replicates on the adjudication subsample (`replication.adjudication\\\_subsample`, `R\\\_judge`). Each level injects its corresponding variance component, and the three are reported separately via the variance-components decomposition of Eq. (20a) (`bootstrap.report\\\_variance\\\_components`). The inner resample adds only a constant factor in compute because it draws from the *already-collected* replicates rather than re-querying providers — the price of capturing $\sigma^2_{\mathrm{gen}}$ is paid once, at collection, and the bootstrap inherits it for free. The fusion-simulation residual $\widehat\sigma_u$ of Section 4.2.1 is propagated as an additional, separately reported term where the simulated-fusion surrogate is used for $Q(S)$.
 
-Confidence intervals use the **bias-corrected and accelerated (BCa)** method (Efron, 1987) rather than the percentile interval, because the FMEC statistics are nonlinear functionals of the data and are generally biased and skewed in finite samples. The BCa endpoints adjust the percentile cutoffs by a bias-correction term $\\hat z\_0$ — estimated from the fraction of bootstrap replicates below the point estimate — and an acceleration term $\\hat a$ estimated by jackknife (here a *delete-one-cluster* jackknife, consistent with the cluster resampling), which corrects for dependence of the variance on the underlying parameter. Where a statistic is approximately pivotal we additionally report the bootstrap-$t$ interval as a sensitivity check; material disagreement between BCa and bootstrap-$t$ is flagged rather than silently resolved. All intervals are reported at the 95% level (`ci\\\_level = 0.95`).
+Confidence intervals use the **bias-corrected and accelerated (BCa)** method (Efron, 1987) rather than the percentile interval, because the FMEC statistics are nonlinear functionals of the data and are generally biased and skewed in finite samples. The BCa endpoints adjust the percentile cutoffs by a bias-correction term $\hat z_0$ — estimated from the fraction of bootstrap replicates below the point estimate — and an acceleration term $\hat a$ estimated by jackknife (here a *delete-one-cluster* jackknife, consistent with the cluster resampling), which corrects for dependence of the variance on the underlying parameter. Where a statistic is approximately pivotal we additionally report the bootstrap-$t$ interval as a sensitivity check; material disagreement between BCa and bootstrap-$t$ is flagged rather than silently resolved. All intervals are reported at the 95% level (`ci\\\_level = 0.95`).
 
-The nested-bootstrap distribution of $\\mathrm{FMEC}\_j$ is the object from which we read the *recommendation-stability* diagnostics of Section 11.10; because it now perturbs all three variance components, it is the honest substrate for the stability claims that make a recommendation actionable, rather than an optimistic one that ignores the dominant run-to-run source.
+The nested-bootstrap distribution of $\mathrm{FMEC}_j$ is the object from which we read the *recommendation-stability* diagnostics of Section 11.10; because it now perturbs all three variance components, it is the honest substrate for the stability claims that make a recommendation actionable, rather than an optimistic one that ignores the dominant run-to-run source.
 
 ### 11.9 Confirmatory tests and multiplicity control
 
 Each hypothesis maps to a specific test on bootstrap-derived quantities:
 
-* **H1 / H5** (utility superiority / non-inferiority): one-sided test on the paired per-task utility differences $U(S\_{\\mathrm{FMEC}})-U(S\_{\\mathrm{Bench}})$ (H1) and on the non-inferiority margin (H5), using the bootstrap distribution of the mean difference. Pairing is by evaluation task to remove task-difficulty variance.
-* **H2** (coupling): test that the Spearman $\\rho(\\mathrm{IG},\\mathrm{MEC})$ exceeds $0$, with the null distribution obtained by permuting the pairing between IG and MEC across candidates.
-* **H3** (risk reduction): one-sided test on $R(\\mathbf{w}*{\\mathrm{NoRisk}})-R(\\mathbf{w}*{\\mathrm{FMEC}})>0$ over bootstrap resamples.
-* **H4** (insufficiency of benchmark rank): test that Kendall's $\\tau$ is bounded above by $1-\\Delta\_\\tau$, combined with a sign-based count of rank inversions between benchmark and FMEC orderings.
+* **H1 / H5** (utility superiority / non-inferiority): one-sided test on the paired per-task utility differences $U(S_{\mathrm{FMEC}})-U(S_{\mathrm{Bench}})$ (H1) and on the non-inferiority margin (H5), using the bootstrap distribution of the mean difference. Pairing is by evaluation task to remove task-difficulty variance.
+* **H2** (coupling): test that the Spearman $\rho(\mathrm{IG}\,\mathrm{MEC})$ exceeds $0$, with the null distribution obtained by permuting the pairing between IG and MEC across candidates.
+* **H3** (risk reduction): one-sided test on $R(\mathbf{w}_{\mathrm{NoRisk}})-R(\mathbf{w}_{\mathrm{FMEC}})>0$ over bootstrap resamples.
+* **H4** (insufficiency of benchmark rank): test that Kendall's $\tau$ is bounded above by $1-\Delta_\tau$, combined with a sign-based count of rank inversions between benchmark and FMEC orderings.
 
-Because five hypotheses are tested on one evaluation corpus, the family-wise error rate is controlled by the **Holm–Bonferroni** step-down procedure (Holm, 1979). With ordered $p$-values $p\_{(1)}\\le\\cdots\\le p\_{(5)}$ and family level $\\alpha=0.05$ (`stat\\\_tests`, Section 10.1), $H\_{(k)}$ is rejected iff $p\_{(j)} \\le \\alpha/(5-j+1)$ for all $j\\le k$. Holm is chosen over plain Bonferroni for its uniform power advantage at no cost in validity, and over false-discovery-rate procedures because the setting is confirmatory (a small fixed family of pre-registered hypotheses), where strong family-wise control is the appropriate guarantee.
+Because five hypotheses are tested on one evaluation corpus, the family-wise error rate is controlled by the **Holm–Bonferroni** step-down procedure (Holm, 1979). With ordered $p$-values $p_{(1)}\le\cdots\le p_{(5)}$ and family level $\alpha=0.05$ (`stat\\\_tests`, Section 10.1), $H_{(k)}$ is rejected iff $p_{(j)} \le \alpha/(5-j+1)$ for all $j\le k$. Holm is chosen over plain Bonferroni for its uniform power advantage at no cost in validity, and over false-discovery-rate procedures because the setting is confirmatory (a small fixed family of pre-registered hypotheses), where strong family-wise control is the appropriate guarantee.
 
 ### 11.10 Effect sizes and recommendation stability
 
@@ -1333,37 +1333,37 @@ Statistical significance is necessary but not sufficient; a deployment decision 
 **Standardized mean difference (Cohen's $d$; Cohen, 1988).** For the paired utility differences,
 
 $$
-d ;=; \\frac{\\bar{U}*{\\mathrm{FMEC}} - \\bar{U}*{\\mathrm{Bench}}}{s\_{\\mathrm{pooled}}}, \\tag{49}
+d \;=\; \frac{\bar{U}_{\mathrm{FMEC}} - \bar{U}_{\mathrm{Bench}}}{s_{\mathrm{pooled}}}, \tag{49}
 $$
 
-with $s\_{\\mathrm{pooled}}$ the pooled standard deviation. We report $d$ with its bootstrap CI and interpret it on conventional thresholds while acknowledging their domain-dependence.
+with $s_{\mathrm{pooled}}$ the pooled standard deviation. We report $d$ with its bootstrap CI and interpret it on conventional thresholds while acknowledging their domain-dependence.
 
-**Cliff's $\\delta$ (ordinal dominance; Cliff, 1993).** Because utilities are not guaranteed interval-scaled, we report the nonparametric dominance statistic
+**Cliff's $\delta$ (ordinal dominance; Cliff, 1993).** Because utilities are not guaranteed interval-scaled, we report the nonparametric dominance statistic
 
 $$
-\\delta ;=; \\frac{#{U(S\_{\\mathrm{FMEC}}) > U(S\_{\\mathrm{Bench}})} ;-; #{U(S\_{\\mathrm{FMEC}}) < U(S\_{\\mathrm{Bench}})}}{n\_{\\mathrm{F}}, n\_{\\mathrm{B}}}, \\tag{50}
+\delta \;=\; \frac{\#{U(S_{\mathrm{FMEC}}) > U(S_{\mathrm{Bench}})} \;-\; \#{U(S_{\mathrm{FMEC}}) < U(S_{\mathrm{Bench}})}}{n_{\mathrm{F}}\, n_{\mathrm{B}}}, \tag{50}
 $$
 
 which is robust to the scale and to outliers and answers the practitioner's question directly: how often does FMEC win?
 
-**Recommendation-Stability Probability (RSP).** The decision-relevant quantity is the probability that the *recommended ensemble does not change* under resampling. With $S^\\star$ the ensemble selected on the full sample and $S^{\\star(b)}$ the ensemble selected on **nested-bootstrap** replicate $b$ (Algorithm 3, resampling tasks, generation replicates, and adjudication draws),
+**Recommendation-Stability Probability (RSP).** The decision-relevant quantity is the probability that the *recommended ensemble does not change* under resampling. With $S^\star$ the ensemble selected on the full sample and $S^{\star(b)}$ the ensemble selected on **nested-bootstrap** replicate $b$ (Algorithm 3, resampling tasks, generation replicates, and adjudication draws),
 
 $$
-\\mathrm{RSP} ;=; \\frac{1}{B}\\sum\_{b=1}^{B}\\mathbb{1}!\\left\[,S^{\\star(b)} = S^{\\star},\\right]. \\tag{51}
+\mathrm{RSP} \;=\; \frac{1}{B}\sum_{b=1}^{B}\mathbb{1}\!\left[\,S^{\star(b)} = S^{\star}\,\right]. \tag{51}
 $$
 
-The resampling in (51) **perturbs all three variance components of Eq. (20a)**; an RSP computed over a task-only bootstrap would mechanically inflate, because it holds generation and adjudication noise fixed at their observed draw. A companion **per-model selection frequency** — the fraction of replicates in which each candidate is selected — is reported as a forest plot (`fmec\\\_ci\\\_forest`, Section 10.2). A recommendation is treated as stable only if $\\mathrm{RSP}\\ge 0.90$ (`stat\\\_tests.rsp\\\_floor`, pre-registered); below the floor the framework is *required* to report that it cannot issue a stable recommendation for that deployment, regardless of the point FMEC of the selected ensemble. RSP and selection frequency thereby convert the abstract recommendation into a calibrated statement: a model selected in $49%$ of resamples is not a robust recommendation, and the framework says so by construction.
+The resampling in (51) **perturbs all three variance components of Eq. (20a)**; an RSP computed over a task-only bootstrap would mechanically inflate, because it holds generation and adjudication noise fixed at their observed draw. A companion **per-model selection frequency** — the fraction of replicates in which each candidate is selected — is reported as a forest plot (`fmec\\\_ci\\\_forest`, Section 10.2). A recommendation is treated as stable only if $\mathrm{RSP}\ge 0.90$ (`stat\\\_tests.rsp\\\_floor`, pre-registered); below the floor the framework is *required* to report that it cannot issue a stable recommendation for that deployment, regardless of the point FMEC of the selected ensemble. RSP and selection frequency thereby convert the abstract recommendation into a calibrated statement: a model selected in $49%$ of resamples is not a robust recommendation, and the framework says so by construction.
 
 ### 11.11 Robustness to utility specification
 
-The utility weights $(\\alpha,\\beta,\\gamma,\\delta)$ encode a deployment's preferences and are not estimated from data. A recommendation that flips under small perturbations of these weights is fragile. We therefore conduct a **preference-robustness analysis**: $10{,}000$ weight vectors are drawn from a symmetric Dirichlet, $(\\alpha,\\beta,\\gamma,\\delta)\\sim\\mathrm{Dirichlet}(1,1,1,1)$, the full selection pipeline is re-run for each draw, and the distribution of selected ensembles is summarized. The reported quantity is the **selection-stability surface**: the probability mass that each ensemble accumulates across the preference simplex. This is the empirical instantiation of the utility-calibration / Dirichlet-sensitivity analysis of the theoretical section; it certifies whether a recommendation is a property of the *evidence* or merely of one arbitrary weight choice. Robustness to the FMEC coefficients $(\\eta,\\lambda)$ is assessed analogously on a grid.
+The utility weights $(\alpha\,\beta\,\gamma\,\delta)$ encode a deployment's preferences and are not estimated from data. A recommendation that flips under small perturbations of these weights is fragile. We therefore conduct a **preference-robustness analysis**: $10{,}000$ weight vectors are drawn from a symmetric Dirichlet, $(\alpha\,\beta\,\gamma\,\delta)\sim\mathrm{Dirichlet}(1,1,1,1)$, the full selection pipeline is re-run for each draw, and the distribution of selected ensembles is summarized. The reported quantity is the **selection-stability surface**: the probability mass that each ensemble accumulates across the preference simplex. This is the empirical instantiation of the utility-calibration / Dirichlet-sensitivity analysis of the theoretical section; it certifies whether a recommendation is a property of the *evidence* or merely of one arbitrary weight choice. Robustness to the FMEC coefficients $(\eta\,\lambda)$ is assessed analogously on a grid.
 
 ### 11.12 Oracle-regret evaluation
 
-For candidate pools small enough to enumerate ($n\\le 20$, where the $O(2^n)$ exhaustive search of Algorithm 4 is tractable), we compute the **true** optimal coalition $S^\\star$ (Eq. 28) and the realized **regret** of the FMEC selection (Eq. 29),
+For candidate pools small enough to enumerate ($n\le 20$, where the $O(2^n)$ exhaustive search of Algorithm 4 is tractable), we compute the **true** optimal coalition $S^\star$ (Eq. 28) and the realized **regret** of the FMEC selection (Eq. 29),
 
 $$
-\\mathrm{Regret}(S\_{\\mathrm{FMEC}}) ;=; U(S^\\star) - U(S\_{\\mathrm{FMEC}}),
+\mathrm{Regret}(S_{\mathrm{FMEC}}) \;=\; U(S^\star) - U(S_{\mathrm{FMEC}}),
 $$
 
 reporting its bootstrap distribution. This is the only analysis that measures *absolute* selection quality against ground truth rather than relative performance against a baseline, and it directly probes the looseness of the greedy approximation guarantee (Section 6.9) on realized instances. The regret distribution, alongside the submodular worst-case bound, brackets the framework's selection optimality from both the empirical and the theoretical side.
@@ -1372,12 +1372,12 @@ reporting its bootstrap distribution. This is the only analysis that measures *a
 
 The design is constructed so that the framework can lose. Every failure condition below carries a **pre-registered numeric threshold** (the values fixed in `STAT\\\_TESTS`, Section 10.1); a falsification criterion with an unstated boundary is not a criterion. The central thesis is **rejected** under any of the following pre-committed outcomes:
 
-* **H1 not rejected** after Holm correction at family level $\\alpha=0.05$ — the FMEC ensemble does not beat benchmark-top-$K$ on expected utility. This is the primary falsification.
-* **H4 rejected in reverse** — benchmark rank and FMEC rank are statistically *not* distinguishable from identical, i.e. the data are consistent with $\\tau > 0.80$ (the complement of the $\\Delta\_\\tau=0.20$ bound, `stat\\\_tests.delta\\\_tau`), implying benchmark scores already suffice and the machinery is unnecessary.
-* **Negligible effect sizes** — even if $p<\\alpha$, if $\\text{Cohen's }d < 0.20$ **and** $\\text{Cliff's }\\delta < 0.147$ (`negligible\\\_d`, `negligible\\\_cliffs\\\_delta`), or $\\mathrm{RSP} < 0.90$ (`rsp\\\_floor`), the recommendation is operationally void.
+* **H1 not rejected** after Holm correction at family level $\alpha=0.05$ — the FMEC ensemble does not beat benchmark-top-$K$ on expected utility. This is the primary falsification.
+* **H4 rejected in reverse** — benchmark rank and FMEC rank are statistically *not* distinguishable from identical, i.e. the data are consistent with $\tau > 0.80$ (the complement of the $\Delta_\tau=0.20$ bound, `stat\\\_tests.delta\\\_tau`), implying benchmark scores already suffice and the machinery is unnecessary.
+* **Negligible effect sizes** — even if $p<\alpha$, if $\text{Cohen's }d < 0.20$ **and** $\text{Cliff's }\delta < 0.147$ (`negligible\\\_d`, `negligible\\\_cliffs\\\_delta`), or $\mathrm{RSP} < 0.90$ (`rsp\\\_floor`), the recommendation is operationally void.
 * **Instability under utility perturbation** — if the Dirichlet analysis (Section 11.11) shows no ensemble accumulating dominant selection mass (no ensemble at or above the same $0.90$ stability bar across the preference simplex), the framework cannot issue a stable recommendation for that deployment.
-* **Ablation nullity** — if A1 and A2 show that setting $\\eta=0$ and $\\lambda=0$ does not degrade utility by a margin exceeding the H1 effect (no significant loss at $\\alpha=0.05$ after Holm), then the information and risk terms — the framework's distinctive content — add nothing, and FMEC collapses to plain utility greedy (Baseline 6).
-* **Adjudication-quality floor breached** — if the adjudicator–human Cohen's $\\kappa$ falls below $0.70$ (`kappa\\\_floor`) on the audited subsample and cannot be remediated by re-adjudication, the correctness labels are deemed too unreliable to support inference on the affected (open-ended) tasks, which are then excluded or the analysis is declared inconclusive for them.
+* **Ablation nullity** — if A1 and A2 show that setting $\eta=0$ and $\lambda=0$ does not degrade utility by a margin exceeding the H1 effect (no significant loss at $\alpha=0.05$ after Holm), then the information and risk terms — the framework's distinctive content — add nothing, and FMEC collapses to plain utility greedy (Baseline 6).
+* **Adjudication-quality floor breached** — if the adjudicator–human Cohen's $\kappa$ falls below $0.70$ (`kappa\\\_floor`) on the audited subsample and cannot be remediated by re-adjudication, the correctness labels are deemed too unreliable to support inference on the affected (open-ended) tasks, which are then excluded or the analysis is declared inconclusive for them.
 
 Enumerating the conditions under which the framework fails is not a hedge; it is the property that distinguishes a scientific proposal from an unfalsifiable one. A method that cannot specify its own failure modes — *with numbers* — cannot be trusted when it succeeds.
 
@@ -1397,28 +1397,28 @@ Enumerate the candidate models (`models` roster, Section 10.2). Stratify them by
 Partition each task domain (Section 11.4) into a **development** split (for freezing hyperparameters), a **qualification** split, and a held-out **evaluation** split. Enforce `preprocessing.held\\\_out\\\_disjoint\\\_check`: the evaluation split must be disjoint from both development and qualification. For the two non-canonical domains, apply the corpus-fixity resolution of Section 11.4 (freeze + hash + release the item sets, or demote them to exploratory). All confirmatory analyses (Step 9 onward) touch the evaluation split exactly once.
 
 **Step 3 — Qualify candidates per domain.**
-For each domain $t$, compute development-split scores and admit model $M\_i$ iff $\\mathrm{score}*t(M\_i)\\ge P*{\\min}\\cdot\\max\_j \\mathrm{score}*t(M\_j)$, with $P*{\\min}$ from `preprocessing.qualification\\\_threshold\\\_pct` (Section 11.2). The output is the per-domain qualified set, the input to selection.
+For each domain $t$, compute development-split scores and admit model $M_i$ iff $\mathrm{score}_t(M_i)\ge P_{\min}\cdot\max_j \mathrm{score}_t(M_j)$, with $P_{\min}$ from `preprocessing.qualification\\\_threshold\\\_pct` (Section 11.2). The output is the per-domain qualified set, the input to selection.
 
 **Step 4 — Collect model responses, with replicates.**
-For every qualified model and every evaluation item, draw **$R$ independent generations** (`replication.R = 5`, per-replicate seeds `replicate\\\_seed\\\_base + rep`) using the role-specific decoding settings in `llm\\\_settings` (Section 10.1): panel/candidate generation at `temperature = 0.2`, structured solving at `0.1`, and adjudication at `0.0`. The replicate axis is mandatory: it is the only way to estimate the generation-variance component $\\sigma^2\_{\\mathrm{gen}}$ of Eq. (20a). Candidate generation uses the panel system template (Appendix C1) and, for structured tasks, the structured-solver template (Appendix C3). Persist raw responses in the `model\\\_answer` / `candidate\\\_solution` structures of Section 9.1 and populate the per-(model, task, replicate) outcome tensor of Section 9.2.
+For every qualified model and every evaluation item, draw **$R$ independent generations** (`replication.R = 5`, per-replicate seeds `replicate\\\_seed\\\_base + rep`) using the role-specific decoding settings in `llm\\\_settings` (Section 10.1): panel/candidate generation at `temperature = 0.2`, structured solving at `0.1`, and adjudication at `0.0`. The replicate axis is mandatory: it is the only way to estimate the generation-variance component $\sigma^2_{\mathrm{gen}}$ of Eq. (20a). Candidate generation uses the panel system template (Appendix C1) and, for structured tasks, the structured-solver template (Appendix C3). Persist raw responses in the `model\\\_answer` / `candidate\\\_solution` structures of Section 9.1 and populate the per-(model, task, replicate) outcome tensor of Section 9.2.
 
 **Step 5 — Adjudicate correctness and label error modes (with replicated judging).**
-Score each response for correctness and, when incorrect, assign exactly one of the eight error categories (Section 11.5) using the judge system template (Appendix C2) at `temperature = 0.0`. On a fraction `replication.adjudication\\\_subsample = 0.20` of tasks, run the judge `R\\\_judge = 5` times to expose the adjudication-variance component $\\sigma^2\_{\\mathrm{adj}}$ (Eq. 20a). Audit a human-labeled subsample and report inter-rater agreement; **if Cohen's $\\kappa < 0.70$ (`stat\\\_tests.kappa\\\_floor`) and cannot be remediated, the affected open-ended tasks are excluded per Section 11.13**. The labeled outcomes populate the correctness matrix and the error-category vectors $E\_i$ (Eq. 2).
+Score each response for correctness and, when incorrect, assign exactly one of the eight error categories (Section 11.5) using the judge system template (Appendix C2) at `temperature = 0.0`. On a fraction `replication.adjudication\\\_subsample = 0.20` of tasks, run the judge `R\\\_judge = 5` times to expose the adjudication-variance component $\sigma^2_{\mathrm{adj}}$ (Eq. 20a). Audit a human-labeled subsample and report inter-rater agreement; **if Cohen's $\kappa < 0.70$ (`stat\\\_tests.kappa\\\_floor`) and cannot be remediated, the affected open-ended tasks are excluded per Section 11.13**. The labeled outcomes populate the correctness matrix and the error-category vectors $E_i$ (Eq. 2).
 
 **Step 6 — Estimate marginal contribution (MEC).**
-Execute **Algorithm 1** to estimate $\\widehat{\\mathrm{MEC}}\_j$ via Monte Carlo coalition sampling (Eqs. 4–6), with $K$ from `monte\\\_carlo.K` and the coalition seed fixed. The utility of each sampled coalition is computed from Eq. (3) using `utility\\\_weights` $(\\alpha,\\beta,\\gamma,\\delta)$. Optionally compute the Shapley value $\\phi\_j$ (Eq. 7) where the design calls for full coalition averaging rather than the leave-one-out approximation (Eq. 30).
+Execute **Algorithm 1** to estimate $\widehat{\mathrm{MEC}}_j$ via Monte Carlo coalition sampling (Eqs. 4–6), with $K$ from `monte\\\_carlo.K` and the coalition seed fixed. The utility of each sampled coalition is computed from Eq. (3) using `utility\\\_weights` $(\alpha\,\beta\,\gamma\,\delta)$. Optionally compute the Shapley value $\phi_j$ (Eq. 7) where the design calls for full coalition averaging rather than the leave-one-out approximation (Eq. 30).
 
 **Step 7 — Estimate information gain (IG).**
 Compute the conditional information gain for each candidate (Eqs. 8–9) using the estimator named in `information\\\_gain.estimator` (outcome-based conditional mutual information by default), with Laplace smoothing `smoothing\\\_alpha`. This quantifies each model's *complementary* signal given the responses already in the coalition.
 
 **Step 8 — Estimate the risk model.**
-Form the error-mode covariance $\\Sigma$ (Eq. 10) using the estimator in `covariance.estimator` (Ledoit–Wolf shrinkage by default), optionally block-structured by error category (`block\\\_by\\\_error\\\_category`). Marginal risk contribution $\\mathrm{MRC}\_j=(\\Sigma\\mathbf{w})\_j$ follows from Eq. (12).
+Form the error-mode covariance $\Sigma$ (Eq. 10) using the estimator in `covariance.estimator` (Ledoit–Wolf shrinkage by default), optionally block-structured by error category (`block\\\_by\\\_error\\\_category`). Marginal risk contribution $\mathrm{MRC}_j=(\Sigma\mathbf{w})_j$ follows from Eq. (12).
 
 **Step 9 — Compose FMEC.**
-Combine the three signals into the composite score $\\mathrm{FMEC}\_j=\\widehat{\\mathrm{MEC}}\_j+\\eta,\\mathrm{IG}\_j-\\lambda,\\mathrm{MRC}\_j$ (Eq. 13), with $(\\eta,\\lambda)$ from `fmec\\\_hyperparams`. This produces the per-candidate FMEC table of Section 9.3.
+Combine the three signals into the composite score $\mathrm{FMEC}_j=\widehat{\mathrm{MEC}}_j+\eta\,\mathrm{IG}_j-\lambda\,\mathrm{MRC}_j$ (Eq. 13), with $(\eta\,\lambda)$ from `fmec\\\_hyperparams`. This produces the per-candidate FMEC table of Section 9.3.
 
 **Step 10 — Solve the constrained selection.**
-Run **Algorithm 2** (greedy constrained selection) to maximize the portfolio utility $U(\\mathbf{w})=\\sum\_i w\_i,\\mathrm{FMEC}*i$ (Eqs. 14–16) subject to the simplex constraint and the cost, latency, and risk budgets in `optimization` ($C*{\\max},L\_{\\max},R\_{\\max}$). The output is the selected ensemble $S\_{\\mathrm{FMEC}}$ and its weights. Record which constraints are active at the optimum.
+Run **Algorithm 2** (greedy constrained selection) to maximize the portfolio utility $U(\mathbf{w})=\sum_i w_i\,\mathrm{FMEC}_i$ (Eqs. 14–16) subject to the simplex constraint and the cost, latency, and risk budgets in `optimization` ($C_{\max},L_{\max},R_{\max}$). The output is the selected ensemble $S_{\mathrm{FMEC}}$ and its weights. Record which constraints are active at the optimum.
 
 **Step 11 — Quantify uncertainty.**
 Run **Algorithm 3** (bootstrap validation) with $B$ resamples from `bootstrap.B`, recomputing Steps 6–10 on each resample to obtain BCa confidence intervals (`bootstrap.interval`), the per-model selection frequencies, and the Recommendation-Stability Probability (Eq. 51).
@@ -1427,15 +1427,15 @@ Run **Algorithm 3** (bootstrap validation) with $B$ resamples from `bootstrap.B`
 Test the five pre-registered hypotheses (Eqs. 44–48) using the procedures of Section 11.9, controlling the family-wise error rate by Holm–Bonferroni at `stat\\\_tests.alpha\\\_level`. Report effect sizes (Eqs. 49–50) with bootstrap intervals.
 
 **Step 13 — Robustness analyses.**
-Execute the preference-robustness analysis (Section 11.11): draw $10{,}000$ weight vectors from $\\mathrm{Dirichlet}(1,1,1,1)$, re-run Steps 9–10 per draw, and report the selection-stability surface. Repeat on a grid over $(\\eta,\\lambda)$.
+Execute the preference-robustness analysis (Section 11.11): draw $10{,}000$ weight vectors from $\mathrm{Dirichlet}(1,1,1,1)$, re-run Steps 9–10 per draw, and report the selection-stability surface. Repeat on a grid over $(\eta\,\lambda)$.
 
 **Step 14 — Oracle-regret (small pools).**
-For pools with $n\\le 20$, run **Algorithm 4** to compute the optimal coalition $S^\\star$ (Eq. 28) by exhaustive search and report the regret distribution (Eq. 29) of the FMEC selection.
+For pools with $n\le 20$, run **Algorithm 4** to compute the optimal coalition $S^\star$ (Eq. 28) by exhaustive search and report the regret distribution (Eq. 29) of the FMEC selection.
 
 **Step 15 — Reporting.**
 Generate the standard figures (`plots`, Section 10.2): the cost–quality efficient frontier, the FMEC confidence-interval forest plot, the error-mode covariance heatmap, the RSP/selection-frequency bar chart, and the variance-components bar chart (Eq. 20a), all at `dpi = 300` in the configured figure format. Reconcile every reported number against the persisted artifacts of Step 0, and verify that the recomputed pipeline regenerates the published tensor SHA-256.
 
-This is the precise sense in which the two reproducibility tiers differ. **Tier 1 (computational):** given the released, hash-pinned outcome tensor of Section 9.2 and the seeds of Section 10.2, Steps 6–15 are *fully deterministic* and reproduce the published numbers bit-for-bit — there is no model call on this path, so provider non-determinism cannot enter. **Tier 2 (empirical):** Steps 4–5 (re-collection) are *not* deterministic, because they query mutating black-box endpoints; the protocol does not pretend otherwise but instruments the irreducible variability — the replicate axis quantifies $\\sigma^2\_{\\mathrm{gen}}$, the replicated judge quantifies $\\sigma^2\_{\\mathrm{adj}}$ (Eq. 20a), and the drift monitor and version manifest make any between-collection change in the subjects detectable. Reproducibility is thus *bounded and measured* on the one path where it cannot be made exact, and *exact* on the path where it can.
+This is the precise sense in which the two reproducibility tiers differ. **Tier 1 (computational):** given the released, hash-pinned outcome tensor of Section 9.2 and the seeds of Section 10.2, Steps 6–15 are *fully deterministic* and reproduce the published numbers bit-for-bit — there is no model call on this path, so provider non-determinism cannot enter. **Tier 2 (empirical):** Steps 4–5 (re-collection) are *not* deterministic, because they query mutating black-box endpoints; the protocol does not pretend otherwise but instruments the irreducible variability — the replicate axis quantifies $\sigma^2_{\mathrm{gen}}$, the replicated judge quantifies $\sigma^2_{\mathrm{adj}}$ (Eq. 20a), and the drift monitor and version manifest make any between-collection change in the subjects detectable. Reproducibility is thus *bounded and measured* on the one path where it cannot be made exact, and *exact* on the path where it can.
 
 ### 12.1 Reference instantiation (the executed minimal instance)
 
@@ -1443,15 +1443,15 @@ The reproduction protocol above is exercised by a single, fully specified **refe
 
 **Fixed configuration of the reference instantiation.**
 
-* **Pool.** $n \\le 20$ qualified models (so the $O(2^n)$ oracle enumeration of Algorithm 4 is tractable), drawn to cross family and capability-cluster boundaries per Section 11.3; an explicitly open-weight sub-pool is retained for the H5 test.
+* **Pool.** $n \le 20$ qualified models (so the $O(2^n)$ oracle enumeration of Algorithm 4 is tractable), drawn to cross family and capability-cluster boundaries per Section 11.3; an explicitly open-weight sub-pool is retained for the H5 test.
 * **Domains.** The five canonical, publicly hosted benchmarks of Section 13.2 (MMLU, MATH/GSM8K, GPQA, HumanEval, SWE-bench). The two non-canonical domains (finance, long-context/agentic) are included **only** if their item sets are frozen, hashed, and released per Section 11.4; otherwise they are reported as exploratory and excluded from the confirmatory tests.
 * **Estimation.** $K = 512$ coalitions via the permutation sampler (Eq. 6a); outcome-based CMI with count-sufficient conditioning and Miller–Madow correction (Eq. 9a); Ledoit–Wolf covariance, block-structured by error category (Eq. 10).
-* **Replication and uncertainty.** $R = 5$ generations per (model, task); $20%$ adjudication subsample with $R\_J = 5$ judge replicates; $B = 10{,}000$ nested-cluster bootstrap replicates with the variance-components decomposition of Eq. (20a).
+* **Replication and uncertainty.** $R = 5$ generations per (model, task); $20%$ adjudication subsample with $R_J = 5$ judge replicates; $B = 10{,}000$ nested-cluster bootstrap replicates with the variance-components decomposition of Eq. (20a).
 * **Selection and validation.** Greedy constrained selection (Algorithm 2) under the budgets of Section 10.2; oracle-regret (Algorithm 4) computed exactly; the five hypotheses tested under Holm–Bonferroni against the pre-registered thresholds of Section 11.13.
 
-**Released artifacts (the reproducibility package).** Upon execution, the package contains: the frozen outcome tensor (Section 9.2) and its **SHA-256**, the model-version manifest, the contamination report, the frozen non-canonical item sets and hashes (if used), all seeds (`STUDY\\\_CONFIG`), and every persisted intermediate in `reproducibility.persist` (coalition samples, $\\widehat\\Sigma$, FMEC estimates, bootstrap outputs, variance components, selected ensemble). A reader regenerates the FMEC table, the selected ensemble, the variance components, and the hypothesis decisions from the tensor and seeds alone, and confirms Tier-1 reproduction by matching the published hash.
+**Released artifacts (the reproducibility package).** Upon execution, the package contains: the frozen outcome tensor (Section 9.2) and its **SHA-256**, the model-version manifest, the contamination report, the frozen non-canonical item sets and hashes (if used), all seeds (`STUDY\\\_CONFIG`), and every persisted intermediate in `reproducibility.persist` (coalition samples, $\widehat\Sigma$, FMEC estimates, bootstrap outputs, variance components, selected ensemble). A reader regenerates the FMEC table, the selected ensemble, the variance components, and the hypothesis decisions from the tensor and seeds alone, and confirms Tier-1 reproduction by matching the published hash.
 
-**Honesty about status.** This manuscript reports **no results**: the artifacts above are specified and their schemas fixed, but the execution-derived values — the tensor hash, the per-(benchmark, model) contamination rates, the realized variance components, the realized inter-rater $\\kappa$, and the realized FMEC/selection/decision outputs — are produced *only by running the instantiation* and are referenced throughout as artifacts-to-be-populated, never as fabricated numbers. The amendments of this revision make the path to those artifacts complete and reproducible; they do not, and cannot, substitute for executing it.
+**Honesty about status.** This manuscript reports **no results**: the artifacts above are specified and their schemas fixed, but the execution-derived values — the tensor hash, the per-(benchmark, model) contamination rates, the realized variance components, the realized inter-rater $\kappa$, and the realized FMEC/selection/decision outputs — are produced *only by running the instantiation* and are referenced throughout as artifacts-to-be-populated, never as fabricated numbers. The amendments of this revision make the path to those artifacts complete and reproducible; they do not, and cannot, substitute for executing it.
 
 
 
@@ -1512,14 +1512,14 @@ Use of any benchmark must respect its license and, critically, its **contaminati
 
 This paper reports no *experimental results*; its empirical contribution is the **reproducibility apparatus**, and that apparatus is concrete rather than promissory. The reference implementation — inference-gateway client, structured-output schemas, adjudication procedure, weighted- and verifier-augmented fusion operators, sandboxed code-execution path, the four algorithms of Section 7, and the optional contextual-bandit router — mirrors the architecture of Section 8 and the configuration of Section 10.2, and is released as a deterministic, seed-driven pipeline whose Stage 6–15 outputs are a pure function of released data.
 
-**The primary released artifact is the frozen outcome tensor** of Section 9.2: the per-(model, task, replicate) correctness-and-error matrix with full provenance columns. Everything the framework computes — $\\widehat{\\mathrm{MEC}}$ (Eqs. 6, 6a), IG (Eqs. 9, 9a), $\\widehat\\Sigma$ (Eq. 10), the FMEC table (Eq. 13), the constrained selection (Algorithm 2), the nested bootstrap and variance components (Algorithm 3, Eq. 20a), and the oracle regret (Algorithm 4) — is a deterministic transform of this tensor and the seeds of Section 10.2. Releasing it is therefore what makes the study reproducible at all, and it is what separates this revision from a specification that can only be re-implemented but never re-checked.
+**The primary released artifact is the frozen outcome tensor** of Section 9.2: the per-(model, task, replicate) correctness-and-error matrix with full provenance columns. Everything the framework computes — $\widehat{\mathrm{MEC}}$ (Eqs. 6, 6a), IG (Eqs. 9, 9a), $\widehat\Sigma$ (Eq. 10), the FMEC table (Eq. 13), the constrained selection (Algorithm 2), the nested bootstrap and variance components (Algorithm 3, Eq. 20a), and the oracle regret (Algorithm 4) — is a deterministic transform of this tensor and the seeds of Section 10.2. Releasing it is therefore what makes the study reproducible at all, and it is what separates this revision from a specification that can only be re-implemented but never re-checked.
 
 The package is organized by reproducibility tier.
 
 * **Tier 1 — computational reproducibility (bit-exact).** The released archive contains: (i) the frozen outcome tensor and its **published SHA-256 over the canonicalized bytes** (`reproducibility.tensor\\\_sha256`); (ii) the configuration object (`STUDY\\\_CONFIG`, Section 10.2) with all seeds; (iii) the frozen prompt templates (Appendix C); (iv) every persisted *stage-wise intermediate* in `reproducibility.persist` — coalition samples, covariance estimate, FMEC estimates, bootstrap outputs, variance components, and the selected ensemble — so a reader can checkpoint-verify at each stage rather than only end-to-end; (v) the frozen, hashed item sets and construction manifests for the two non-canonical domains (Section 11.4), where used. A reproduction is **Tier-1 valid iff re-running the released pipeline on the released tensor regenerates the published SHA-256 and reproduces every downstream table**. No model is called on this path, so provider non-determinism cannot enter and the result is exact.
-* **Tier 2 — empirical replicability (bounded, not exact).** Re-collecting the tensor by re-querying the models (Steps 4–5) is *not* deterministic, because the subjects are mutating, black-box commercial endpoints. The package supports a disciplined re-collection rather than pretending it is exact: the **model-version manifest** and per-call `system\\\_fingerprint`/`provider\\\_version` records (Section 9.2) make any between-collection drift detectable; the replicate axis and replicated judging make the generation and adjudication variance components ($\\sigma^2\_{\\mathrm{gen}}$, $\\sigma^2\_{\\mathrm{adj}}$ of Eq. 20a) *measurable* on the new collection; and the contamination report (Section 13.2) is regenerated for the new model versions. A re-collection that lands within the reported variance envelope is a successful Tier-2 replication; one that does not is, by design, traced to a named source — drift, contamination, or genuine effect change — rather than left as an unexplained failure.
+* **Tier 2 — empirical replicability (bounded, not exact).** Re-collecting the tensor by re-querying the models (Steps 4–5) is *not* deterministic, because the subjects are mutating, black-box commercial endpoints. The package supports a disciplined re-collection rather than pretending it is exact: the **model-version manifest** and per-call `system\\\_fingerprint`/`provider\\\_version` records (Section 9.2) make any between-collection drift detectable; the replicate axis and replicated judging make the generation and adjudication variance components ($\sigma^2_{\mathrm{gen}}$, $\sigma^2_{\mathrm{adj}}$ of Eq. 20a) *measurable* on the new collection; and the contamination report (Section 13.2) is regenerated for the new model versions. A re-collection that lands within the reported variance envelope is a successful Tier-2 replication; one that does not is, by design, traced to a named source — drift, contamination, or genuine effect change — rather than left as an unexplained failure.
 
-In keeping with double-blind reviewing norms, repository and author-identifying information are withheld at submission and replaced by an anonymized placeholder; a permanent, versioned archive (with a DOI) accompanies the de-anonymized release. No API credentials are included in any artifact — only the *name* of the environment variable from which the gateway key is read (Section 10.2) — so the package is shareable without exposing secrets. Execution-derived quantities (the tensor hash, the contamination rates, the realized variance components, the realized $\\kappa$, and all FMEC/selection/decision outputs) are populated **only upon execution of the reference instantiation** (Section 12.1) and are never reported here as fabricated values.
+In keeping with double-blind reviewing norms, repository and author-identifying information are withheld at submission and replaced by an anonymized placeholder; a permanent, versioned archive (with a DOI) accompanies the de-anonymized release. No API credentials are included in any artifact — only the *name* of the environment variable from which the gateway key is read (Section 10.2) — so the package is shareable without exposing secrets. Execution-derived quantities (the tensor hash, the contamination rates, the realized variance components, the realized $\kappa$, and all FMEC/selection/decision outputs) are populated **only upon execution of the reference instantiation** (Section 12.1) and are never reported here as fabricated values.
 
 
 
@@ -1527,23 +1527,23 @@ In keeping with double-blind reviewing norms, repository and author-identifying 
 
 Implementing FMEC at a professional standard is an inherently *interdisciplinary* undertaking: the framework borrows its risk machinery from quantitative finance, its attribution machinery from cooperative game theory, its complementarity machinery from information theory, and its evaluation machinery from modern statistical practice, then realizes all of it in production LLM-serving infrastructure. This section enumerates the disciplines a practitioner must command and the concrete skills within each, mapped to the parts of the framework they govern. It is organized as a competency map for a Master's- or PhD-level implementer and is the basis for the disciplines-and-skills synthesis requested downstream.
 
-**1. Mathematics of finance and portfolio theory.** The entire risk-and-selection layer is a transposition of Markowitz mean–variance portfolio construction onto a portfolio of models. The practitioner must understand mean–variance optimization, the efficient frontier and Pareto-dominance (Section 5.2), risk budgeting, and the interpretation of a covariance matrix as the object that governs diversification. Concretely: formulating and solving the constrained allocation of Eqs. (14)–(16); reading the marginal-risk contribution $(\\Sigma\\mathbf{w})\_j$ (Eq. 12) as the sensitivity of portfolio risk to a position; and reasoning about quality-adjusted cost (Eq. 17) as a risk-adjusted-return analogue. Without this lens, the risk term is an opaque penalty rather than a principled diversification control.
+**1. Mathematics of finance and portfolio theory.** The entire risk-and-selection layer is a transposition of Markowitz mean–variance portfolio construction onto a portfolio of models. The practitioner must understand mean–variance optimization, the efficient frontier and Pareto-dominance (Section 5.2), risk budgeting, and the interpretation of a covariance matrix as the object that governs diversification. Concretely: formulating and solving the constrained allocation of Eqs. (14)–(16); reading the marginal-risk contribution $(\Sigma\mathbf{w})_j$ (Eq. 12) as the sensitivity of portfolio risk to a position; and reasoning about quality-adjusted cost (Eq. 17) as a risk-adjusted-return analogue. Without this lens, the risk term is an opaque penalty rather than a principled diversification control.
 
 **2. Cooperative game theory.** Marginal contribution is defined game-theoretically. The practitioner must understand coalitional games, the marginal contribution of a player to a coalition (Eq. 4), the Shapley value and its axiomatic justification — efficiency, symmetry, null-player, additivity (Eq. 7) — and the computational intractability that motivates Monte Carlo estimation. The required skill is to recognize *why* a model's value is its averaged marginal contribution across coalitions rather than its standalone score, and to know when the cheaper leave-one-out approximation (Eq. 30) is defensible.
 
 **3. Information theory.** Complementarity is quantified by conditional mutual information. The practitioner must command entropy, mutual information, conditional mutual information, and the chain rule of mutual information — the last being the engine of the information-complementarity theorem (Eq. 22). The operative skills are estimating conditional mutual information from finite categorical data with appropriate smoothing (Eqs. 8–9, Section 10.1), and distinguishing response-level from outcome-level information (Ablation A6), which determines what "new information" a model is credited with.
 
-**4. Monte Carlo methods and computational statistics.** Both contribution and its uncertainty are estimated by sampling. Required: Monte Carlo estimator construction and its bias/variance properties (Eqs. 5–6), convergence at the $O(1/\\sqrt{K})$ rate (Eq. 20), sample-complexity reasoning via concentration inequalities (Eq. 21, Hoeffding), and the nonparametric bootstrap with bias-corrected-and-accelerated intervals (Section 11.8). The practitioner must be able to set the Monte Carlo budget $K$ from a target precision rather than by convention, and to read a bootstrap distribution as the sampling distribution of a nonlinear statistic.
+**4. Monte Carlo methods and computational statistics.** Both contribution and its uncertainty are estimated by sampling. Required: Monte Carlo estimator construction and its bias/variance properties (Eqs. 5–6), convergence at the $O(1/\sqrt{K})$ rate (Eq. 20), sample-complexity reasoning via concentration inequalities (Eq. 21, Hoeffding), and the nonparametric bootstrap with bias-corrected-and-accelerated intervals (Section 11.8). The practitioner must be able to set the Monte Carlo budget $K$ from a target precision rather than by convention, and to read a bootstrap distribution as the sampling distribution of a nonlinear statistic.
 
 **5. Robust multivariate statistics.** The risk model stands or falls on the quality of the covariance estimate, which is high-dimensional relative to the number of evaluation tasks. Required skills: recognizing the instability of the sample covariance in this regime; applying shrinkage estimation (Ledoit–Wolf) and understanding the bias–variance trade-off it strikes (Eq. 10, Ablation A5); and exploiting structure — here, block structure by error category — to regularize the estimate toward the failure geometry that Theorem 2 (Eq. 23) identifies as decisive.
 
-**6. Submodular and constrained optimization.** Selection is a constrained combinatorial optimization. The practitioner must understand monotone submodularity, the greedy algorithm and its approximation guarantees, and — crucially — *which* guarantee applies under *which* constraint: $(1-1/e)$ under a cardinality constraint, $\\tfrac{1}{2}(1-1/e)$ for naive greedy under a knapsack/budget constraint, $(1-1/e)$ via partial-enumeration greedy, and $(1-e^{-\\gamma})$ under $\\gamma$-weak submodularity (Section 6.9). The required skill is to match the algorithm to the constraint structure of Eq. (14) and to know the bound it earns, rather than asserting an unconditional optimality the method does not possess.
+**6. Submodular and constrained optimization.** Selection is a constrained combinatorial optimization. The practitioner must understand monotone submodularity, the greedy algorithm and its approximation guarantees, and — crucially — *which* guarantee applies under *which* constraint: $(1-1/e)$ under a cardinality constraint, $\tfrac{1}{2}(1-1/e)$ for naive greedy under a knapsack/budget constraint, $(1-1/e)$ via partial-enumeration greedy, and $(1-e^{-\gamma})$ under $\gamma$-weak submodularity (Section 6.9). The required skill is to match the algorithm to the constraint structure of Eq. (14) and to know the bound it earns, rather than asserting an unconditional optimality the method does not possess.
 
-**7. Statistical inference and experimental design.** The evaluation is a confirmatory study and must be conducted as one. Required: pre-registration and the exploratory/confirmatory distinction (Section 11); one-sided, paired, and **non-inferiority** testing (H1, H5); rank-correlation inference (H2, H4); family-wise error control by Holm–Bonferroni (Section 11.9); effect-size estimation and interpretation — Cohen's $d$, Cliff's $\\delta$ (Eqs. 49–50); and stratified sampling for variance control (Section 11.3). The skill that ties these together is designing an experiment that *can fail* and specifying in advance what failure looks like (Section 11.13).
+**7. Statistical inference and experimental design.** The evaluation is a confirmatory study and must be conducted as one. Required: pre-registration and the exploratory/confirmatory distinction (Section 11); one-sided, paired, and **non-inferiority** testing (H1, H5); rank-correlation inference (H2, H4); family-wise error control by Holm–Bonferroni (Section 11.9); effect-size estimation and interpretation — Cohen's $d$, Cliff's $\delta$ (Eqs. 49–50); and stratified sampling for variance control (Section 11.3). The skill that ties these together is designing an experiment that *can fail* and specifying in advance what failure looks like (Section 11.13).
 
 **8. LLM systems and API engineering.** The framework is realized against live model-serving infrastructure. Required skills: programming an OpenAI-compatible inference gateway with the base URL and environment-variable-sourced credentials of Section 10.2; eliciting and validating **structured outputs** against typed schemas (Section 9.1); controlling decoding parameters per role — generation, solving, adjudication temperatures (Section 10.1); and reasoning about the cost, latency, and throughput of a multi-model serving path (Eqs. 36–37). Secure execution is a sub-competency in its own right: sandboxing untrusted model-generated code with resource and network restrictions (Section 8.3) is mandatory wherever a verification path executes code.
 
-**9. Reinforcement learning and contextual bandits.** The optional learned router is a contextual-bandit problem. Required: the explore–exploit trade-off, the $\\epsilon$-greedy policy, reward design that internalizes cost and risk (Eq. 42), and online policy update from bandit feedback (Eqs. 40–43). The skill is to recognize routing as sequential decision-making under partial feedback, and to design a reward that does not silently optimize quality at unbounded cost.
+**9. Reinforcement learning and contextual bandits.** The optional learned router is a contextual-bandit problem. Required: the explore–exploit trade-off, the $\epsilon$-greedy policy, reward design that internalizes cost and risk (Eq. 42), and online policy update from bandit feedback (Eqs. 40–43). The skill is to recognize routing as sequential decision-making under partial feedback, and to design a reward that does not silently optimize quality at unbounded cost.
 
 **10. Reproducible research and scientific-software engineering.** Finally, the practitioner must be able to make the entire pipeline *reproducible*: global seeding, model-version manifesting, deterministic adjudication, and disciplined persistence of every intermediate artifact (Section 10.2, Section 12). Adjacent to this is rigorous prompt and rubric engineering — designing the panel, solver, and judge templates (Appendix C) and the eight-category error rubric (Section 11.5) so that adjudication is consistent and auditable.
 
@@ -1559,13 +1559,13 @@ A framework that proposes to displace a simple and widely used heuristic — pic
 
 **1. Estimation cost.** FMEC is expensive to compute. The contribution estimator costs $O(nK + n^2 m)$ per the complexity analysis of Eq. (32), the bootstrap multiplies the entire pipeline by $B=10{,}000$, and the preference-robustness analysis adds $10{,}000$ further re-solves. This revision *adds* cost in two places, and we state it plainly rather than hide it: collecting $R=5$ generations per (model, task) multiplies generation cost roughly fivefold, and the replicated judging on the adjudication subsample adds judge calls. The trade is deliberate — that fivefold collection cost is what buys an honest generation-variance estimate (Eq. 20a) and is paid *once* at collection, after which the nested bootstrap reuses the stored replicates at no extra inference cost. For a deployment that will serve a single model on a handful of queries, none of this overhead is recoverable. The framework is justified only when the selection is *amortized* — when the chosen ensemble will serve a large query volume, so that a one-time estimation cost is repaid by sustained gains in utility. The break-even analysis between estimation cost and downstream benefit is itself a decision the practitioner must perform; FMEC does not assume it away.
 
-**2. Non-stationarity and model drift.** The contribution, information, and risk estimates are valid only for the *specific model versions* audited. Providers update served models, sometimes silently; an update changes a model's error distribution and therefore its covariance with the rest of the pool, invalidating $\\Sigma$ and the selection that depends on it. This revision converts drift from a disclaimed hazard into a *monitored, thresholded control*: every call records the served-version string and per-request `system\\\_fingerprint` (Section 9.2), and a fixed canary probe set is re-run on a schedule with a correctness-rate-shift trigger (`DRIFT\\\_MONITOR`, Section 10.1) that *mandates* re-estimation when exceeded. This makes drift not merely *detectable* but *actionable* — yet it still cannot make estimates *durable*: monitoring tells you when to re-estimate, it does not remove the need to. Periodic re-estimation is mandatory, and the cadence is a function of the volatility of the provider ecosystem, which is presently high. This is also the dominant reason Tier-2 (empirical) replication is bounded below Tier-1 (computational) reproduction (Section 13.3): the released tensor is exactly reproducible forever; the models that produced it are not.
+**2. Non-stationarity and model drift.** The contribution, information, and risk estimates are valid only for the *specific model versions* audited. Providers update served models, sometimes silently; an update changes a model's error distribution and therefore its covariance with the rest of the pool, invalidating $\Sigma$ and the selection that depends on it. This revision converts drift from a disclaimed hazard into a *monitored, thresholded control*: every call records the served-version string and per-request `system\\\_fingerprint` (Section 9.2), and a fixed canary probe set is re-run on a schedule with a correctness-rate-shift trigger (`DRIFT\\\_MONITOR`, Section 10.1) that *mandates* re-estimation when exceeded. This makes drift not merely *detectable* but *actionable* — yet it still cannot make estimates *durable*: monitoring tells you when to re-estimate, it does not remove the need to. Periodic re-estimation is mandatory, and the cadence is a function of the volatility of the provider ecosystem, which is presently high. This is also the dominant reason Tier-2 (empirical) replication is bounded below Tier-1 (computational) reproduction (Section 13.3): the released tensor is exactly reproducible forever; the models that produced it are not.
 
 **3. Task-distribution dependence.** Complementarity is not an intrinsic property of a model; it is a property of a model *relative to a task distribution*. An ensemble that is optimal on the evaluation corpus may be suboptimal on a deployment whose query distribution differs — a model that contributes unique information on mathematical reasoning may be redundant on code. External validity therefore depends on the evaluation corpus being representative of deployment, a condition that must be argued, not assumed, and re-examined when the deployment distribution shifts.
 
-**4. Utility-weight specification.** The weights $(\\alpha,\\beta,\\gamma,\\delta)$ that define $v(S)$ (Eq. 3) are exogenous preferences, not estimable quantities, and the selected ensemble depends on them. The preference-robustness analysis (Section 11.11) characterizes this dependence and can certify when a recommendation is stable across the simplex, but it cannot substitute for genuine elicitation of a deployment's true trade-offs between quality, cost, latency, and risk. Where those preferences are themselves uncertain or contested, the framework's output is correspondingly conditional.
+**4. Utility-weight specification.** The weights $(\alpha\,\beta\,\gamma\,\delta)$ that define $v(S)$ (Eq. 3) are exogenous preferences, not estimable quantities, and the selected ensemble depends on them. The preference-robustness analysis (Section 11.11) characterizes this dependence and can certify when a recommendation is stable across the simplex, but it cannot substitute for genuine elicitation of a deployment's true trade-offs between quality, cost, latency, and risk. Where those preferences are themselves uncertain or contested, the framework's output is correspondingly conditional.
 
-**5. Adjudication dependence.** Correctness labels and error-category assignments are produced by an automated adjudicator (Appendix C2) with a human-audited subsample. Every downstream quantity — $\\widehat{\\mathrm{MEC}}$, $\\mathrm{IG}$, and $\\Sigma$ — inherits the adjudicator's errors and biases. For verifiable tasks (code with tests, problems with checkable answers), verification-augmented fusion (Section 8.3) grounds the labels in execution and sharply reduces this dependence; for open-ended generation it does not, and the framework's estimates are then only as reliable as the judge. This revision strengthens the treatment in two ways. First, the adjudication-variance component $\\sigma^2\_{\\mathrm{adj}}$ is now *measured*, not merely acknowledged: the judge is run $R\_J$ times on an adjudication subsample and that variance is propagated through the nested bootstrap (Eq. 20a), so the judge's non-determinism enters the reported uncertainty rather than hiding inside a single label. Second, a pre-registered Cohen's $\\kappa$ floor of $0.70$ (Section 11.13) *gates* the analysis: open-ended tasks whose adjudicator–human agreement falls below it are excluded or the analysis declared inconclusive for them. Reporting and propagating inter-rater agreement bounds and quantifies this exposure; for genuinely open-ended generation it does not eliminate it, and that residual is the honest limit of the approach where execution cannot ground the label.
+**5. Adjudication dependence.** Correctness labels and error-category assignments are produced by an automated adjudicator (Appendix C2) with a human-audited subsample. Every downstream quantity — $\widehat{\mathrm{MEC}}$, $\mathrm{IG}$, and $\Sigma$ — inherits the adjudicator's errors and biases. For verifiable tasks (code with tests, problems with checkable answers), verification-augmented fusion (Section 8.3) grounds the labels in execution and sharply reduces this dependence; for open-ended generation it does not, and the framework's estimates are then only as reliable as the judge. This revision strengthens the treatment in two ways. First, the adjudication-variance component $\sigma^2_{\mathrm{adj}}$ is now *measured*, not merely acknowledged: the judge is run $R_J$ times on an adjudication subsample and that variance is propagated through the nested bootstrap (Eq. 20a), so the judge's non-determinism enters the reported uncertainty rather than hiding inside a single label. Second, a pre-registered Cohen's $\kappa$ floor of $0.70$ (Section 11.13) *gates* the analysis: open-ended tasks whose adjudicator–human agreement falls below it are excluded or the analysis declared inconclusive for them. Reporting and propagating inter-rater agreement bounds and quantifies this exposure; for genuinely open-ended generation it does not eliminate it, and that residual is the honest limit of the approach where execution cannot ground the label.
 
 A sixth concern, **benchmark contamination** (Section 13.2), cuts across limitations 3 and 5: if evaluation items leaked into a candidate's training data, both its measured competence and its measured complementarity are corrupted. Contamination auditing for the specific versions in use is a precondition for valid inference, not an optional robustness check.
 
@@ -1576,19 +1576,19 @@ The following framing situates FMEC within the microeconomics of AI serving. It 
 The orchestration layer is best understood as an economic agent that arbitrages quality against cost. Demand for "intelligence" (useful task completions) is price-elastic; a constant-elasticity model writes consumed quantity $Q$ as a function of unit price $P$,
 
 $$
-Q ;=; A,P^{-\\varepsilon},\\qquad \\varepsilon > 0, \\tag{52}
+Q \;=\; A\,P^{-\varepsilon}\,\qquad \varepsilon > 0, \tag{52}
 $$
 
-with $A$ a scale constant and $\\varepsilon$ the price elasticity. Revenue (or, symmetrically, total spend) is then
+with $A$ a scale constant and $\varepsilon$ the price elasticity. Revenue (or, symmetrically, total spend) is then
 
 $$
-R ;=; P,Q ;=; A,P^{,1-\\varepsilon}, \\tag{53}
+R \;=\; P\,Q \;=\; A\,P^{1-\varepsilon}, \tag{53}
 $$
 
-so that in the elastic regime $\\varepsilon>1$ a *fall* in the unit price of intelligence raises total expenditure — consumption grows faster than price declines. The same logic, applied to the cost of compute per unit of delivered capability, is a Jevons-style observation: letting $g$ denote delivered capability per unit cost and $D(g)$ the induced demand for compute, an elasticity
+so that in the elastic regime $\varepsilon>1$ a *fall* in the unit price of intelligence raises total expenditure — consumption grows faster than price declines. The same logic, applied to the cost of compute per unit of delivered capability, is a Jevons-style observation: letting $g$ denote delivered capability per unit cost and $D(g)$ the induced demand for compute, an elasticity
 
 $$
-\\frac{d \\ln D}{d \\ln g} ;>; 1 \\tag{54}
+\frac{d \ln D}{d \ln g} \;>\; 1 \tag{54}
 $$
 
 means that making each unit of capability cheaper *increases* total compute consumed rather than decreasing it. A widely circulated industry observation captures the same intuition qualitatively: cheaper intelligence does not shrink the market for intelligence, it enlarges it.
@@ -1603,7 +1603,7 @@ This paper has argued that the prevailing approach to assembling large-language-
 
 The framework is, deliberately, a synthesis rather than an invention of components: it transposes Markowitz portfolio theory, Shapley attribution, and information-theoretic complementarity onto the model-selection problem, and it inherits from each the theoretical guarantees that make the synthesis rigorous — consistency and sample-complexity bounds for the estimator (Eqs. 19–21), the information-complementarity and correlated-failure theorems that formalize *when* ensembling helps (Eqs. 22–23), and the submodularity result that licenses greedy selection with a stated approximation guarantee (Section 6.9). We were careful to state that guarantee precisely: $(1-1/e)$ under cardinality constraints, and weaker, constraint-specific bounds under knapsack budgets and weak submodularity — a correction to the looser claims that sometimes accompany greedy ensemble methods.
 
-We have not reported results. The contribution is the framework, its theory, and a pre-registered, falsifiable evaluation protocol (Section 11) that specifies in advance the hypotheses, estimators, multiplicity control, effect sizes, and — critically — the *numeric* conditions under which the framework should be rejected (Section 11.13): a non-inferiority margin tied to cost saving (Eq. 48a), a rank-discordance margin $\\Delta\_\\tau=0.20$, a recommendation-stability floor $\\mathrm{RSP}\\ge 0.90$, an adjudication-agreement floor $\\kappa\\ge 0.70$, and negligible-effect floors on Cohen's $d$ and Cliff's $\\delta$. Equally deliberate is the reproducibility posture. We separate computational reproducibility — made bit-exact by releasing the frozen outcome tensor, its published hash, the seeds, and every stage-wise intermediate, so the entire chain downstream of generation is an independently re-runnable function of released data — from empirical replicability, which is bounded by the mutating black-box endpoints that produce the data and which we therefore *instrument and bound* through a variance-components design (Eq. 20a) that measures generation and adjudication noise rather than ignoring it. The protocol is exercised by a hash-pinned reference instantiation (Section 12.1), and wherever a quantity can only come from executing it, the manuscript names it as an artifact-to-be-populated rather than inventing a value. That combination is the point: a model-selection methodology earns trust not by being clever but by being able to lose, by saying beforehand and *with numbers* what losing would look like, and by making the path to its own verification exact where it can be and honestly bounded where it cannot.
+We have not reported results. The contribution is the framework, its theory, and a pre-registered, falsifiable evaluation protocol (Section 11) that specifies in advance the hypotheses, estimators, multiplicity control, effect sizes, and — critically — the *numeric* conditions under which the framework should be rejected (Section 11.13): a non-inferiority margin tied to cost saving (Eq. 48a), a rank-discordance margin $\Delta_\tau=0.20$, a recommendation-stability floor $\mathrm{RSP}\ge 0.90$, an adjudication-agreement floor $\kappa\ge 0.70$, and negligible-effect floors on Cohen's $d$ and Cliff's $\delta$. Equally deliberate is the reproducibility posture. We separate computational reproducibility — made bit-exact by releasing the frozen outcome tensor, its published hash, the seeds, and every stage-wise intermediate, so the entire chain downstream of generation is an independently re-runnable function of released data — from empirical replicability, which is bounded by the mutating black-box endpoints that produce the data and which we therefore *instrument and bound* through a variance-components design (Eq. 20a) that measures generation and adjudication noise rather than ignoring it. The protocol is exercised by a hash-pinned reference instantiation (Section 12.1), and wherever a quantity can only come from executing it, the manuscript names it as an artifact-to-be-populated rather than inventing a value. That combination is the point: a model-selection methodology earns trust not by being clever but by being able to lose, by saying beforehand and *with numbers* what losing would look like, and by making the path to its own verification exact where it can be and honestly bounded where it cannot.
 
 If the central hypothesis survives that test, the consequence for practice is concrete. The right question when building an LLM system is not *which model is best*, but *which portfolio of models delivers the most task utility per unit cost at acceptable risk* — and that is a question with a quantitative, reproducible, and risk-aware answer. FMEC is a proposal for how to compute it.
 
@@ -1658,46 +1658,46 @@ The following table collects the principal symbols. Where a symbol is overloaded
 
 |Symbol|Meaning|
 |-|-|
-|$M\_i$|Candidate model $i$, described by the tuple of Eq. (1)|
-|$\\mu\_i, c\_i, l\_i, r\_i$|Model $i$'s quality (competence), unit cost, latency, and **reliability** score|
-|$E\_i$|Model $i$'s error-mode indicator vector over the taxonomy of Eq. (2)|
+|$M_i$|Candidate model $i$, described by the tuple of Eq. (1)|
+|$\mu_i, c_i, l_i, r_i$|Model $i$'s quality (competence), unit cost, latency, and **reliability** score|
+|$E_i$|Model $i$'s error-mode indicator vector over the taxonomy of Eq. (2)|
 |$n$|Number of models in the (qualified) candidate pool|
-|$S$|A coalition (subset) of models, $S\\subseteq{1,\\dots,n}$|
+|$S$|A coalition (subset) of models, $S\subseteq{1,\dots,n}$|
 |$v(S)$|Utility of coalition $S$ (Eq. 3)|
 |$Q(S), C(S), L(S)$|Coalition quality, cost, and latency components of $v(S)$|
-|$R(\\cdot)$|**Correlated-failure risk**; $R(S)$ at coalition level (Eq. 3), $R(\\mathbf{w})=\\mathbf{w}^\\top\\Sigma\\mathbf{w}$ at weight level (Eq. 11)|
-|$\\alpha,\\beta,\\gamma,\\delta$|Utility preference weights on quality, risk, cost, latency (Eq. 3)|
-|$\\Delta\_j(S)$|Marginal ensemble contribution of model $j$ to coalition $S$ (Eq. 4)|
-|$\\mathrm{MEC}\_j$|Expected marginal ensemble contribution of $j$ (Eq. 5); $\\widehat{\\mathrm{MEC}}\_j$ its Monte Carlo estimate (Eq. 6)|
-|$\\phi\_j$|Shapley value of model $j$ (Eq. 7)|
+|$R(\cdot)$|**Correlated-failure risk**; $R(S)$ at coalition level (Eq. 3), $R(\mathbf{w})=\mathbf{w}^\top\Sigma\mathbf{w}$ at weight level (Eq. 11)|
+|$\alpha\,\beta\,\gamma\,\delta$|Utility preference weights on quality, risk, cost, latency (Eq. 3)|
+|$\Delta_j(S)$|Marginal ensemble contribution of model $j$ to coalition $S$ (Eq. 4)|
+|$\mathrm{MEC}_j$|Expected marginal ensemble contribution of $j$ (Eq. 5); $\widehat{\mathrm{MEC}}_j$ its Monte Carlo estimate (Eq. 6)|
+|$\phi_j$|Shapley value of model $j$ (Eq. 7)|
 |$K$|Monte Carlo coalition-sample budget|
-|$Y\_j, A\_j$|Model $j$'s response and outcome (correctness) random variables|
+|$Y_j, A_j$|Model $j$'s response and outcome (correctness) random variables|
 |$Z$|Ground-truth / target signal|
-|$\\mathrm{IG}\_j$|Conditional information gain of $j$ (response-based Eq. 8; outcome-based Eq. 9)|
-|$\\Sigma$|Error-mode covariance matrix (Eq. 10)|
-|$\\mathbf{w}$|Ensemble weight vector on the simplex|
-|$\\mathrm{MRC}\_j$|Marginal risk contribution $(\\Sigma\\mathbf{w})\_j$ (Eq. 12)|
-|$\\eta,\\lambda$|FMEC combination coefficients on information gain and risk (Eq. 13)|
-|$\\mathrm{FMEC}\_j$|Final marginal ensemble contribution of $j$ (Eq. 13)|
-|$U(\\mathbf{w})$|Portfolio objective $\\sum\_i w\_i,\\mathrm{FMEC}\_i$ (Eq. 15)|
-|$C\_{\\max},L\_{\\max},R\_{\\max}$|Cost, latency, and risk budgets (Eq. 14)|
-|$\\mathrm{QAC}$|Quality-adjusted cost (Eq. 17)|
-|$\\mathrm{RUG}$|Risk-adjusted utility gain (Eq. 18)|
-|$S^\\star$|Oracle-optimal coalition (Eq. 28); regret defined in Eq. (29)|
-|$s\_i$|Raw weighted-fusion score of model $i$ (Eq. 34); $q\_i, r\_i$ its quality and reliability, $a,b$ cost/latency exponents|
-|$Q\_F, C\_F, T\_F$|Fused-system quality, cost, and latency (Eqs. 35–37)|
-|$\\pi(a\\mid x)$|Router policy over actions $a$ given context $x$ (Eq. 40)|
-|$r\_t$|Router reward at step $t$ (Eq. 42)|
+|$\mathrm{IG}_j$|Conditional information gain of $j$ (response-based Eq. 8; outcome-based Eq. 9)|
+|$\Sigma$|Error-mode covariance matrix (Eq. 10)|
+|$\mathbf{w}$|Ensemble weight vector on the simplex|
+|$\mathrm{MRC}_j$|Marginal risk contribution $(\Sigma\mathbf{w})_j$ (Eq. 12)|
+|$\eta\,\lambda$|FMEC combination coefficients on information gain and risk (Eq. 13)|
+|$\mathrm{FMEC}_j$|Final marginal ensemble contribution of $j$ (Eq. 13)|
+|$U(\mathbf{w})$|Portfolio objective $\sum_i w_i\,\mathrm{FMEC}_i$ (Eq. 15)|
+|$C_{\max},L_{\max},R_{\max}$|Cost, latency, and risk budgets (Eq. 14)|
+|$\mathrm{QAC}$|Quality-adjusted cost (Eq. 17)|
+|$\mathrm{RUG}$|Risk-adjusted utility gain (Eq. 18)|
+|$S^\star$|Oracle-optimal coalition (Eq. 28); regret defined in Eq. (29)|
+|$s_i$|Raw weighted-fusion score of model $i$ (Eq. 34); $q_i, r_i$ its quality and reliability, $a,b$ cost/latency exponents|
+|$Q_F, C_F, T_F$|Fused-system quality, cost, and latency (Eqs. 35–37)|
+|$\pi(a\mid x)$|Router policy over actions $a$ given context $x$ (Eq. 40)|
+|$r_t$|Router reward at step $t$ (Eq. 42)|
 |$B$|Bootstrap resample count|
-|$R,,R\_J$|Generations per (model, task); judge replicates on the adjudication subsample (Section 11.8)|
-|$\\sigma^2\_{\\mathrm{task}},\\sigma^2\_{\\mathrm{gen}},\\sigma^2\_{\\mathrm{adj}}$|Variance components: task-sampling, generation, adjudication (Eq. 20a)|
-|$\\widehat{Q}\_{\\mathrm{maj}}(S)$|Simulated-fusion (majority-vote) quality surrogate for $Q(S)$ (Eq. 3a)|
-|$c\_S$|Correct-count sufficient statistic $\\sum\_{i\\in S}A\_{S,i}$ for CMI conditioning (Eq. 9a)|
-|$\\mathrm{RSP}$|Recommendation-Stability Probability (Eq. 51); reported stable iff $\\ge 0.90$|
-|$\\mathrm{SelFreq}\_i$|Per-model bootstrap selection frequency (distinct from $\\mathrm{RSP}$; Section 9.3)|
-|$\\Delta\_U,,\\Delta\_\\tau$|Pre-registered non-inferiority margin (Eq. 48a) and rank-discordance margin ($=0.20$)|
-|$P\_{\\min}$|Qualification threshold (Section 11.2)|
-|$\\varepsilon$|Price elasticity of intelligence demand (Eq. 52)|
+|$R\,R_J$|Generations per (model, task); judge replicates on the adjudication subsample (Section 11.8)|
+|$\sigma^2_{\mathrm{task}}\,\sigma^2_{\mathrm{gen}}\,\sigma^2_{\mathrm{adj}}$|Variance components: task-sampling, generation, adjudication (Eq. 20a)|
+|$\widehat{Q}_{\mathrm{maj}}(S)$|Simulated-fusion (majority-vote) quality surrogate for $Q(S)$ (Eq. 3a)|
+|$c_S$|Correct-count sufficient statistic $\sum_{i\in S}A_{S,i}$ for CMI conditioning (Eq. 9a)|
+|$\mathrm{RSP}$|Recommendation-Stability Probability (Eq. 51); reported stable iff $\ge 0.90$|
+|$\mathrm{SelFreq}_i$|Per-model bootstrap selection frequency (distinct from $\mathrm{RSP}$; Section 9.3)|
+|$\Delta_U\,\Delta_\tau$|Pre-registered non-inferiority margin (Eq. 48a) and rank-discordance margin ($=0.20$)|
+|$P_{\min}$|Qualification threshold (Section 11.2)|
+|$\varepsilon$|Price elasticity of intelligence demand (Eq. 52)|
 
 
 
@@ -1709,51 +1709,51 @@ This index enumerates **every** numbered equation in the paper, grouped by role,
 
 |Eq.|Role|
 |-|-|
-|1|Model descriptor tuple $M\_i=(\\mu\_i,c\_i,l\_i,r\_i,E\_i)$|
-|2|Error-mode taxonomy vector $E\_i$|
-|3|Coalition utility $v(S)=\\alpha Q-\\beta R-\\gamma C-\\delta L$|
-|3a|Simulated-fusion quality $\\widehat{Q}\_{\\mathrm{maj}}(S)$ (majority-vote surrogate)|
-|4|Marginal ensemble contribution $\\Delta\_j(S)=v(S\\cup{j})-v(S)$|
+|1|Model descriptor tuple $M_i=(\mu_i,c_i,l_i,r_i,E_i)$|
+|2|Error-mode taxonomy vector $E_i$|
+|3|Coalition utility $v(S)=\alpha Q-\beta R-\gamma C-\delta L$|
+|3a|Simulated-fusion quality $\widehat{Q}_{\mathrm{maj}}(S)$ (majority-vote surrogate)|
+|4|Marginal ensemble contribution $\Delta_j(S)=v(S\cup{j})-v(S)$|
 |5|Expected MEC over coalitions|
 |6|Monte Carlo MEC estimator|
-|6a|Permutation (unbiased Shapley) estimator $\\widehat{\\phi}\_j$|
-|7|Shapley value $\\phi\_j$|
-|8|Information gain (response-based CMI) $I(Y\_j;Z\\mid Y\_S)$|
-|9|Information gain (outcome-based CMI) $I(A\_j;Z\\mid A\_S)$|
+|6a|Permutation (unbiased Shapley) estimator $\widehat{\phi}_j$|
+|7|Shapley value $\phi_j$|
+|8|Information gain (response-based CMI) $I(Y_j;Z\mid Y_S)$|
+|9|Information gain (outcome-based CMI) $I(A_j;Z\mid A_S)$|
 |9a|Outcome-based CMI plug-in with count-conditioning + Miller–Madow|
-|10|Error-mode covariance $\\Sigma=\\mathrm{Cov}(E)$|
-|11|Portfolio risk $R(\\mathbf{w})=\\mathbf{w}^\\top\\Sigma\\mathbf{w}$|
-|12|Marginal risk contribution $\\mathrm{MRC}\_j=(\\Sigma\\mathbf{w})\_j$|
-|13|**FMEC** $=\\widehat{\\mathrm{MEC}}\_j+\\eta,\\mathrm{IG}\_j-\\lambda,\\mathrm{MRC}\_j$|
+|10|Error-mode covariance $\Sigma=\mathrm{Cov}(E)$|
+|11|Portfolio risk $R(\mathbf{w})=\mathbf{w}^\top\Sigma\mathbf{w}$|
+|12|Marginal risk contribution $\mathrm{MRC}_j=(\Sigma\mathbf{w})_j$|
+|13|**FMEC** $=\widehat{\mathrm{MEC}}_j+\eta\,\mathrm{IG}_j-\lambda\,\mathrm{MRC}_j$|
 
 **B.2 Constrained optimization and efficiency (Eqs. 14–18).**
 
 |Eq.|Role|
 |-|-|
 |14|Constrained selection program (simplex + $C,L,R$ budgets)|
-|15|Portfolio objective $U(\\mathbf{w})=\\sum\_i w\_i,\\mathrm{FMEC}\_i$|
+|15|Portfolio objective $U(\mathbf{w})=\sum_i w_i\,\mathrm{FMEC}_i$|
 |16|Expanded objective|
-|17|Quality-adjusted cost $\\mathrm{QAC}=C/Q$|
-|18|Risk-adjusted utility gain $\\mathrm{RUG}$|
+|17|Quality-adjusted cost $\mathrm{QAC}=C/Q$|
+|18|Risk-adjusted utility gain $\mathrm{RUG}$|
 
 **B.3 Theoretical analysis (Eqs. 19–31).**
 
 |Eq.|Role|
 |-|-|
 |19|Estimator consistency (SLLN)|
-|20|Estimator variance $\\sigma^2/K$|
-|20a|Variance-components decomposition $\\sigma^2\_{\\mathrm{task}}+\\sigma^2\_{\\mathrm{gen}}+\\sigma^2\_{\\mathrm{adj}}$|
-|21|Sample complexity $K=O(\\log(1/\\delta)/\\varepsilon^2)$ (Hoeffding)|
+|20|Estimator variance $\sigma^2/K$|
+|20a|Variance-components decomposition $\sigma^2_{\mathrm{task}}+\sigma^2_{\mathrm{gen}}+\sigma^2_{\mathrm{adj}}$|
+|21|Sample complexity $K=O(\log(1/\delta)/\varepsilon^2)$ (Hoeffding)|
 |22|Theorem 1 — information complementarity (chain rule)|
 |23|Theorem 2 — correlated-failure risk|
 |24|Proposition 1 — FMEC dominance|
 |25|Generalization bound (Hoeffding), part 1|
 |26|Generalization bound, part 2|
 |27|Ranking consistency|
-|28|Oracle-optimal coalition $S^\\star$|
+|28|Oracle-optimal coalition $S^\star$|
 |29|Oracle regret|
 |30|Approximate additivity / recoverability|
-|31|Decision-theoretic optimal action $a^\\star$|
+|31|Decision-theoretic optimal action $a^\star$|
 
 **B.4 Algorithmic complexity (Eq. 32).**
 
@@ -1767,15 +1767,15 @@ This index enumerates **every** numbered equation in the paper, grouped by role,
 |-|-|
 |33|Four-subsystem orchestration schematic|
 |33b|Fusion-operator schematic|
-|34|Weighted-fusion score $s\_i$ and normalized weight $w\_i$|
-|35|Fused quality $Q\_F$|
-|36|Fused cost $C\_F=\\sum\_i C\_i + C\_J$|
-|37|Fused latency $T\_F\\approx\\max\_i T\_i + T\_J$|
+|34|Weighted-fusion score $s_i$ and normalized weight $w_i$|
+|35|Fused quality $Q_F$|
+|36|Fused cost $C_F=\sum_i C_i + C_J$|
+|37|Fused latency $T_F\approx\max_i T_i + T_J$|
 |38|Majority correctness $3p^2-2p^3$|
 |39|Independent-verification reliability $1-(1-p)^k$|
-|40|Router policy $\\pi(a\\mid x)$|
+|40|Router policy $\pi(a\mid x)$|
 |41|Router objective|
-|42|Router reward $r\_t$|
+|42|Router reward $r_t$|
 |43|Bandit action selection|
 
 **B.6 Statistical evaluation (Eqs. 44–51).**
@@ -1787,18 +1787,18 @@ This index enumerates **every** numbered equation in the paper, grouped by role,
 |46|H3 — risk reduction|
 |47|H4 — insufficiency of benchmark rank|
 |48|H5 — open-weight non-inferiority|
-|48a|Cost-tied non-inferiority margin $\\Delta\_U$|
+|48a|Cost-tied non-inferiority margin $\Delta_U$|
 |49|Cohen's $d$|
-|50|Cliff's $\\delta$|
+|50|Cliff's $\delta$|
 |51|Recommendation-Stability Probability|
 
 **B.7 Economic context (Eqs. 52–54).**
 
 |Eq.|Role|
 |-|-|
-|52|Constant-elasticity demand $Q=A,P^{-\\varepsilon}$|
-|53|Revenue / spend $R=P,Q=A,P^{1-\\varepsilon}$|
-|54|Jevons-style compute-demand elasticity $d\\ln D/d\\ln g>1$|
+|52|Constant-elasticity demand $Q=A\,P^{-\varepsilon}$|
+|53|Revenue / spend $R=P\,Q=A\,P^{1-\varepsilon}$|
+|54|Jevons-style compute-demand elasticity $d\ln D/d\ln g>1$|
 
 The methodology equations (B.1) and the constrained-optimization equations (B.2) constitute the *defining* equations of the framework; the theory (B.3) supports them; the architecture (B.5), evaluation (B.6), and economic (B.7) groups govern, respectively, serving, validation, and motivation.
 
@@ -1903,7 +1903,7 @@ Task:
 
 ### C.4 Contextual-bandit router (reference implementation)
 
-A reference $\\epsilon$-greedy contextual-bandit router corresponding to Eqs. (40)–(43) and the `router` configuration block (Section 10.2). It is illustrative scaffolding for the *optional* learned-routing layer, not a required component of FMEC selection. Reward design follows Eq. (42): quality net of cost and risk penalties.
+A reference $\epsilon$-greedy contextual-bandit router corresponding to Eqs. (40)–(43) and the `router` configuration block (Section 10.2). It is illustrative scaffolding for the *optional* learned-routing layer, not a required component of FMEC selection. Reward design follows Eq. (42): quality net of cost and risk penalties.
 
 ```python
 import math
@@ -1974,7 +1974,7 @@ A reformatting of Section 14 into a compact competency matrix. Each row is a dis
 |Submodular \& constrained optimization|Monotone submodularity; greedy; constraint-specific guarantees|§6.9; Alg. 2; Eq. 14|
 |Statistical inference \& experimental design|Pre-registration; one-sided / paired / non-inferiority tests; rank correlation; Holm–Bonferroni; effect sizes|§11; Eqs. 44–50|
 |LLM systems \& API engineering|Gateway integration; structured outputs; decoding control; cost/latency reasoning; sandboxing|§8, §10; Eqs. 34–37; §8.3|
-|Reinforcement learning / contextual bandits|Explore–exploit; $\\epsilon$-greedy; reward design; online update|§8.5; Eqs. 40–43; App. C.4|
+|Reinforcement learning / contextual bandits|Explore–exploit; $\epsilon$-greedy; reward design; online update|§8.5; Eqs. 40–43; App. C.4|
 |Reproducible research \& SW engineering|Seeding; version manifesting; deterministic adjudication; artifact persistence; rubric/prompt engineering|§10.2, §12; §11.5; App. C|
 
 
@@ -2070,4 +2070,3 @@ Wolpert, D.H. (1992) 'Stacked generalization', *Neural Networks*, 5(2), pp. 241�
 
 
 *End of paper.*
-
