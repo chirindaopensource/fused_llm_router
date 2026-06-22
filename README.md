@@ -161,7 +161,7 @@ Additionally, the pipeline requires a **`config.yaml`** file, which serves as th
 
 Here is the granular, step-by-step guide to executing the end-to-end pipeline for **"Beyond Benchmark Rankings: Information-Aware and Risk-Aware Optimization of Large Language Model Ensembles"**. This example demonstrates how to synthetically generate the required raw data structures, load the study configuration from a YAML file, and execute the full research pipeline using the `run_experimental_suite` orchestrator.
 
-*Note: Assume that all the callables that have been defined in this conversation are in a single Jupyter notebook. And, that there is no folder with “.py” functions.*
+*Note: Assume that all the callables that have been defined in the "fused_llm_router_draft.ipynb" notebook are in a single Jupyter notebook. And, that there is no folder with “.py” functions.*
 *Note: Assume that the “config.yaml” file is saved in the working directory.*
 
 ### **Step 1: Synthetic Data Generation (`raw_fmec_data`)**
