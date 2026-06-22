@@ -197,7 +197,7 @@ where $P^{(k)}$ is a uniformly random permutation of the $n$ candidates and $P^{
 
 ### 4.6 Conditional information gain
 
-**Why correlation is insufficient.** Suppose model $A$ achieves $95%$ accuracy and model $B$ achieves $60%$, with uncorrelated errors. A correlation-based criterion may reward $B$ as "diverse," yet $B$ contributes little *useful* information. Diversity alone does not imply value; *informative* diversity does. We therefore introduce conditional information gain.
+**Why correlation is insufficient.** Suppose model $A$ achieves $95\%$ accuracy and model $B$ achieves $60\%$, with uncorrelated errors. A correlation-based criterion may reward $B$ as "diverse," yet $B$ contributes little *useful* information. Diversity alone does not imply value; *informative* diversity does. We therefore introduce conditional information gain.
 
 Let $Y_j$ be the output of $M_j$, let $Y_S$ be the outputs already available from ensemble $S$, and let $Z$ be the ground-truth outcome. The conditional information gain of $M_j$ given $S$ is
 $$
@@ -277,7 +277,7 @@ A key derived efficiency metric is quality-adjusted cost,
 $$
 \mathrm{QAC} = \frac{C}{Q}, \tag{17}
 $$
-with lower values indicating more efficient deployment. QAC separates *absolute performance* from *efficiency*: an ensemble that delivers $95%$ of a frontier model's quality at half its cost has a substantially lower (better) QAC, even though it is marginally weaker in absolute terms. This is the quantity through which the cost-structure hypothesis of Section 1.2 becomes measurable (see also H5, Section 11.1). The relative utility gain of an FMEC ensemble over a baseline is reported as
+with lower values indicating more efficient deployment. QAC separates *absolute performance* from *efficiency*: an ensemble that delivers $95\%$ of a frontier model's quality at half its cost has a substantially lower (better) QAC, even though it is marginally weaker in absolute terms. This is the quantity through which the cost-structure hypothesis of Section 1.2 becomes measurable (see also H5, Section 11.1). The relative utility gain of an FMEC ensemble over a baseline is reported as
 $$
 \mathrm{RUG} = \frac{U(S_{\mathrm{FMEC}}) - U(S_{\mathrm{baseline}})}{\lvert U(S_{\mathrm{baseline}})\rvert}. \tag{18}
 $$
@@ -515,7 +515,7 @@ i.e., *linear* in the coalition budget $K$ and at most *quadratic* in the model 
 
 ### 7.3 Algorithm 3 — Nested (Cluster) Bootstrap FMEC Validation
 
-**Purpose.** Quantify uncertainty *honestly*. The naive bootstrap that resamples only tasks captures task-sampling variance alone and is **silent on the two largest run-to-run sources** in a black-box-LLM study — generation variance (the same model, same task, same decoding, different draw) and adjudication variance (the judge's own non-determinism). Algorithm 3 therefore resamples at two levels — tasks (clusters) *and* replicates within a task — and resamples the judge on the adjudication subsample, so that the BCa intervals and the recommendation-stability statistics reflect total variance (Eq. 20a), not a fraction of it. It returns $95%$ BCa intervals for each $\mathrm{FMEC}_i$, the variance decomposition, per-model selection frequency, and the Recommendation-Stability Probability $\mathrm{RSP}$ (Eq. 51).
+**Purpose.** Quantify uncertainty *honestly*. The naive bootstrap that resamples only tasks captures task-sampling variance alone and is **silent on the two largest run-to-run sources** in a black-box-LLM study — generation variance (the same model, same task, same decoding, different draw) and adjudication variance (the judge's own non-determinism). Algorithm 3 therefore resamples at two levels — tasks (clusters) *and* replicates within a task — and resamples the judge on the adjudication subsample, so that the BCa intervals and the recommendation-stability statistics reflect total variance (Eq. 20a), not a fraction of it. It returns $95\%$ BCa intervals for each $\mathrm{FMEC}_i$, the variance decomposition, per-model selection frequency, and the Recommendation-Stability Probability $\mathrm{RSP}$ (Eq. 51).
 
 ```latex
 \\\\begin{algorithm}\\\[t]
@@ -832,7 +832,7 @@ fmec\\\_table = pd.DataFrame(\\\[
 ], columns=\\\["model\\\_id","mec\\\_hat","ig","mrc","fmec","ci\\\_low","ci\\\_high","sel\\\_freq"])
 ```
 
-*Column discussion.* `mec\\\_hat` ($\widehat{\mathrm{MEC}}_i$, Eqs. 6, 6a), `ig` ($\mathrm{IG}_i$, Eqs. 9, 9a), `mrc` ($\mathrm{MRC}_i$, Eq. 12) combine via Eq. 13 into `fmec`. `ci\\\_low`/`ci\\\_high` are the $95%$ BCa bounds from the **nested** bootstrap (Algorithm 3); `sel\\\_freq` is the **per-model selection frequency** $\mathrm{SelFreq}_i$ — the fraction of bootstrap replicates in which $M_i$ is selected — and is distinct from the recommendation-level Recommendation-Stability Probability $\mathrm{RSP}$ of Eq. (51), which is reported once for the ensemble as a whole. (The two were conflated in earlier drafts; Algorithm 3 now separates them.) Note the intended phenomenon: a model can have a *lower* `mec\\\_hat` yet a *higher* `fmec` once information gain and risk are accounted for (the empirical signature of Proposition 1).
+*Column discussion.* `mec\\\_hat` ($\widehat{\mathrm{MEC}}_i$, Eqs. 6, 6a), `ig` ($\mathrm{IG}_i$, Eqs. 9, 9a), `mrc` ($\mathrm{MRC}_i$, Eq. 12) combine via Eq. 13 into `fmec`. `ci\\\_low`/`ci\\\_high` are the $95\%$ BCa bounds from the **nested** bootstrap (Algorithm 3); `sel\\\_freq` is the **per-model selection frequency** $\mathrm{SelFreq}_i$ — the fraction of bootstrap replicates in which $M_i$ is selected — and is distinct from the recommendation-level Recommendation-Stability Probability $\mathrm{RSP}$ of Eq. (51), which is reported once for the ensemble as a whole. (The two were conflated in earlier drafts; Algorithm 3 now separates them.) Note the intended phenomenon: a model can have a *lower* `mec\\\_hat` yet a *higher* `fmec` once information gain and risk are accounted for (the empirical signature of Proposition 1).
 
 
 
@@ -1205,7 +1205,7 @@ H5 is a **non-inferiority** hypothesis and is tested as such (Walker and Nowacki
 $$
 \Delta_U \;=\; \max\!\Big(\gamma\big(C_{\mathrm{frontier}} - C_{\mathrm{open}}\big),\; 0.02\,\big|U(m_{\mathrm{frontier}}^\star)\big|\Big), \tag{48a}
 $$
-with $\gamma$ the cost weight of Eq. (3) and the second term an absolute floor of $2%$ of frontier utility (`stat\\\_tests.delta\\\_U\\\_rule = "cost\\\_tied"`, `delta\\\_U\\\_floor = 0.02`). The derivation makes "non-inferior" mean *"the quality shortfall is no larger than the cost saving is worth,"* which is the economically meaningful sense of substitutability and removes the arbitrariness of a hand-set margin.
+with $\gamma$ the cost weight of Eq. (3) and the second term an absolute floor of $2\%$ of frontier utility (`stat\\\_tests.delta\\\_U\\\_rule = "cost\\\_tied"`, `delta\\\_U\\\_floor = 0.02`). The derivation makes "non-inferior" mean *"the quality shortfall is no larger than the cost saving is worth,"* which is the economically meaningful sense of substitutability and removes the arbitrariness of a hand-set margin.
 
 The asymmetry across hypotheses is deliberate. H1 and H5 are superiority/non-inferiority claims tested with one-sided procedures; H2 and H3 are mechanistic; H4 is an equivalence-style *bound-away-from-one* claim. Conflating them under a single two-sided test would misstate the scientific content.
 
@@ -1341,7 +1341,7 @@ with $s_{\mathrm{pooled}}$ the pooled standard deviation. We report $d$ with its
 **Cliff's $\delta$ (ordinal dominance; Cliff, 1993).** Because utilities are not guaranteed interval-scaled, we report the nonparametric dominance statistic
 
 $$
-\delta \;=\; \frac{\#{U(S_{\mathrm{FMEC}}) > U(S_{\mathrm{Bench}})} \;-\; \#{U(S_{\mathrm{FMEC}}) < U(S_{\mathrm{Bench}})}}{n_{\mathrm{F}}\, n_{\mathrm{B}}}, \tag{50}
+\delta \;=\; \frac{\bigl|\{U(S_{\mathrm{FMEC}}) > U(S_{\mathrm{Bench}})\}\bigr| \;-\; \bigl|\{U(S_{\mathrm{FMEC}}) < U(S_{\mathrm{Bench}})\}\bigr|}{n_{\mathrm{F}}\, n_{\mathrm{B}}}, \tag{50}
 $$
 
 which is robust to the scale and to outliers and answers the practitioner's question directly: how often does FMEC win?
@@ -1352,7 +1352,7 @@ $$
 \mathrm{RSP} \;=\; \frac{1}{B}\sum_{b=1}^{B}\mathbb{1}\!\left[\,S^{\star(b)} = S^{\star}\,\right]. \tag{51}
 $$
 
-The resampling in (51) **perturbs all three variance components of Eq. (20a)**; an RSP computed over a task-only bootstrap would mechanically inflate, because it holds generation and adjudication noise fixed at their observed draw. A companion **per-model selection frequency** — the fraction of replicates in which each candidate is selected — is reported as a forest plot (`fmec\\\_ci\\\_forest`, Section 10.2). A recommendation is treated as stable only if $\mathrm{RSP}\ge 0.90$ (`stat\\\_tests.rsp\\\_floor`, pre-registered); below the floor the framework is *required* to report that it cannot issue a stable recommendation for that deployment, regardless of the point FMEC of the selected ensemble. RSP and selection frequency thereby convert the abstract recommendation into a calibrated statement: a model selected in $49%$ of resamples is not a robust recommendation, and the framework says so by construction.
+The resampling in (51) **perturbs all three variance components of Eq. (20a)**; an RSP computed over a task-only bootstrap would mechanically inflate, because it holds generation and adjudication noise fixed at their observed draw. A companion **per-model selection frequency** — the fraction of replicates in which each candidate is selected — is reported as a forest plot (`fmec\\\_ci\\\_forest`, Section 10.2). A recommendation is treated as stable only if $\mathrm{RSP}\ge 0.90$ (`stat\\\_tests.rsp\\\_floor`, pre-registered); below the floor the framework is *required* to report that it cannot issue a stable recommendation for that deployment, regardless of the point FMEC of the selected ensemble. RSP and selection frequency thereby convert the abstract recommendation into a calibrated statement: a model selected in $49\%$ of resamples is not a robust recommendation, and the framework says so by construction.
 
 ### 11.11 Robustness to utility specification
 
@@ -1446,7 +1446,7 @@ The reproduction protocol above is exercised by a single, fully specified **refe
 * **Pool.** $n \le 20$ qualified models (so the $O(2^n)$ oracle enumeration of Algorithm 4 is tractable), drawn to cross family and capability-cluster boundaries per Section 11.3; an explicitly open-weight sub-pool is retained for the H5 test.
 * **Domains.** The five canonical, publicly hosted benchmarks of Section 13.2 (MMLU, MATH/GSM8K, GPQA, HumanEval, SWE-bench). The two non-canonical domains (finance, long-context/agentic) are included **only** if their item sets are frozen, hashed, and released per Section 11.4; otherwise they are reported as exploratory and excluded from the confirmatory tests.
 * **Estimation.** $K = 512$ coalitions via the permutation sampler (Eq. 6a); outcome-based CMI with count-sufficient conditioning and Miller–Madow correction (Eq. 9a); Ledoit–Wolf covariance, block-structured by error category (Eq. 10).
-* **Replication and uncertainty.** $R = 5$ generations per (model, task); $20%$ adjudication subsample with $R_J = 5$ judge replicates; $B = 10{,}000$ nested-cluster bootstrap replicates with the variance-components decomposition of Eq. (20a).
+* **Replication and uncertainty.** $R = 5$ generations per (model, task); $20\%$ adjudication subsample with $R_J = 5$ judge replicates; $B = 10{,}000$ nested-cluster bootstrap replicates with the variance-components decomposition of Eq. (20a).
 * **Selection and validation.** Greedy constrained selection (Algorithm 2) under the budgets of Section 10.2; oracle-regret (Algorithm 4) computed exactly; the five hypotheses tested under Holm–Bonferroni against the pre-registered thresholds of Section 11.13.
 
 **Released artifacts (the reproducibility package).** Upon execution, the package contains: the frozen outcome tensor (Section 9.2) and its **SHA-256**, the model-version manifest, the contamination report, the frozen non-canonical item sets and hashes (if used), all seeds (`STUDY\\\_CONFIG`), and every persisted intermediate in `reproducibility.persist` (coalition samples, $\widehat\Sigma$, FMEC estimates, bootstrap outputs, variance components, selected ensemble). A reader regenerates the FMEC table, the selected ensemble, the variance components, and the hypothesis decisions from the tensor and seeds alone, and confirms Tier-1 reproduction by matching the published hash.
